@@ -1,7 +1,7 @@
 # ADR 0003: Dotfiles Management
 
 > **Project:** Fedora Phoenix
-> **Status:** ✅ Accepted
+> **Status:** ⚠️ Amended by [ADR 0007](./adr-0007-artifact-sync-harvesting.md) (Stow strategy superseded)
 > **Date:** 2025-12-26
 > **Refers to:** [ADR 0002](./adr-0002-block-architecture.md) (Block IV Definition)
 
