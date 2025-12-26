@@ -16,17 +16,18 @@
 
 負責讀取飛行計畫與鑰匙。
 
-### 1. LoadManifest
+### 1. LoadBlueprint
 
 ```go
-func LoadManifest(path string) (*config.Manifest, error)
+func LoadBlueprint(path string) (*config.Blueprint, error)
 ```
 
 | 屬性 | 說明 |
 |------|------|
 | **Responsibility** | 讀取公開的 `phoenix.yml`，定義系統還原的藍圖 |
 | **Logic** | File Read → YAML Unmarshal → Validate Fields |
-| **Location** | `internal/config/manifest.go` |
+| **Location** | `internal/config/blueprint.go` |
+| **Status** | ✅ Implemented |
 
 ---
 
@@ -123,7 +124,7 @@ func MountDevice(mapperName, mountPoint string)
 ### 6. EnsurePackages
 
 ```go
-func EnsurePackages(pkgs []string)
+func EnsurePackages(pkgs []string) error
 ```
 
 | 屬性 | 說明 |
@@ -132,6 +133,7 @@ func EnsurePackages(pkgs []string)
 | **Idempotency** | Filter installed packages using `rpm -q` for speed |
 | **Command** | `dnf install -y <pkg>` for missing ones |
 | **Location** | `internal/ops/pkg.go` |
+| **Status** | ✅ Implemented |
 
 ---
 
@@ -303,12 +305,12 @@ func GitClone(url, dest, username string)
 
 | Block | Act | Status | Location |
 |-------|-----|--------|----------|
-| **I** | LoadManifest | ⏳ Pending | `internal/config/manifest.go` |
+| **I** | LoadBlueprint | ✅ Implemented | `internal/config/blueprint.go` |
 | **I** | LoadSecrets | ✅ Implemented | `internal/config/secrets.go` |
 | **I** | CleanupSecrets | ✅ Implemented | `internal/config/secrets.go` |
 | **II** | UnlockLuks | ✅ Implemented | `internal/ops/luks.go` |
 | **II** | MountDevice | ✅ Implemented | `internal/ops/luks.go` |
-| **III** | EnsurePackages | ⏳ Pending | `internal/ops/pkg.go` |
+| **III** | EnsurePackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePinnedPackages | ⏳ Pending | `internal/ops/pkg.go` |
 | **III** | EnsureServices | ⏳ Pending | `internal/ops/systemd.go` |
 | **III** | EnsureUserShell | ⏳ Pending | `internal/ops/user.go` |
