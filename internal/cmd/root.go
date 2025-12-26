@@ -9,6 +9,8 @@ import (
 
 // Global flags
 var secretsPath string
+var blueprintPath string
+var dotfilesArchive string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -33,4 +35,6 @@ func init() {
 	// 定義全域 Flag
 	// PersistentFlags 代表這個 flag 可以被所有子命令繼承
 	rootCmd.PersistentFlags().StringVarP(&secretsPath, "secrets", "s", "", "Path to the secrets YAML file (required)")
+	rootCmd.PersistentFlags().StringVarP(&blueprintPath, "blueprint", "b", "phoenix.yml", "Path to the blueprint YAML file")
+	rootCmd.PersistentFlags().StringVarP(&dotfilesArchive, "dotfiles-archive", "d", "", "Path to dotfiles tarball (.tgz)")
 }

@@ -11,9 +11,9 @@ import (
 
 var log = logging.WithSource("secrets")
 
-// SecretsBook defines the schema for the secrets configuration file.
+// Secrets defines the schema for the secrets configuration file.
 // We use YAML tags here to map keys from the input file.
-type SecretsBook struct {
+type Secrets struct {
 	LuksPassword string `yaml:"luks_password"`
 	// Add other secrets here as needed, e.g.:
 	// GitToken     string `yaml:"git_token"`
@@ -21,7 +21,7 @@ type SecretsBook struct {
 }
 
 // LoadSecrets reads and parses the secrets YAML file from the given path.
-func LoadSecrets(path string) (*SecretsBook, error) {
+func LoadSecrets(path string) (*Secrets, error) {
 	log.Infof("Loading secrets from local file: %s", path)
 
 	// 1. Sanity check: file existence
@@ -36,7 +36,7 @@ func LoadSecrets(path string) (*SecretsBook, error) {
 	}
 
 	// 3. Parse YAML
-	var book SecretsBook
+	var book Secrets
 	if err := yaml.Unmarshal(data, &book); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML structure: %w", err)
 	}

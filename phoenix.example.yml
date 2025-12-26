@@ -1,0 +1,37 @@
+version: "1.0"
+
+# Infrastructure: Hardware and storage configuration
+infrastructure:
+  luks:
+    device: "/dev/nvme0n1p4"
+    mapper_name: "company_data"
+    mount_point: "/mnt/company_data"
+
+# System: OS-level packages and services
+system:
+  packages:
+    - git
+    - zsh
+    - docker
+    - fprintd
+    - stow
+  pinned_packages: []
+  services: []
+
+# Identity: Target user configuration
+identity:
+  username: "user"
+  shell: "/bin/zsh"
+
+# UserSpace: User-level configuration (Block IV)
+userspace:
+  stow:
+    source_dir: "~/dotfiles"
+    target_dir: "~"
+    packages:
+      - zsh
+      - nvim
+      - git
+  repos:
+    - url: "git@github.com:user/project-alpha.git"
+      dest: "~/Workspace/project-alpha"

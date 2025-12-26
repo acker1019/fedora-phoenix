@@ -5,7 +5,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/acker1019/fedora-phoenix/internal/logging"
 )
+
+var luksLog = logging.WithSource("ops/luks")
 
 // UnlockLuks unlocks the device using the provided password string.
 // Updated signature: accepts 'password' as the 3rd argument.
@@ -13,11 +17,11 @@ func UnlockLuks(devicePath, mapperName, password string) error {
 	// Idempotency check: if /dev/mapper/xxx exists, we are good.
 	mapperPath := fmt.Sprintf("/dev/mapper/%s", mapperName)
 	if _, err := os.Stat(mapperPath); err == nil {
-		fmt.Printf("🔒 [LUKS] Device %s is already unlocked. Skipping.\n", mapperName)
+		luksLog.Infof("Device %s is already unlocked. Skipping.", mapperName)
 		return nil
 	}
 
-	fmt.Printf("🔑 [LUKS] Unlocking %s with injected credentials...\n", devicePath)
+	luksLog.Infof("Unlocking %s with injected credentials...", devicePath)
 
 	// Command: cryptsetup open <device> <name> --type luks -
 	cmd := exec.Command("cryptsetup", "open", devicePath, mapperName, "--type", "luks")
@@ -46,29 +50,35 @@ func UnlockLuks(devicePath, mapperName, password string) error {
 		return fmt.Errorf("cryptsetup failed (invalid password?): %w", err)
 	}
 
-	fmt.Println("✅ LUKS unlocked successfully.")
+	luksLog.Info("LUKS unlocked successfully")
 	return nil
 }
 
 // MountDevice mounts the unlocked mapper device to the target path.
-func MountDevice(source, target string) {
+func MountDevice(mapperName, mountPoint string) error {
+	// Construct full device path from mapper name
+	devicePath := fmt.Sprintf("/dev/mapper/%s", mapperName)
+
 	// Check if already mounted
 	// Using `mountpoint -q` is the easiest way in shell, usually safe to exec.
-	if err := exec.Command("mountpoint", "-q", target).Run(); err == nil {
-		fmt.Printf("📂 [Mount] %s is already mounted. Skipping.\n", target)
-		return
+	if err := exec.Command("mountpoint", "-q", mountPoint).Run(); err == nil {
+		luksLog.Infof("%s is already mounted. Skipping.", mountPoint)
+		return nil
 	}
 
 	// Ensure directory exists
-	if err := os.MkdirAll(target, 0755); err != nil {
-		panic(fmt.Sprintf("Failed to mkdir %s: %v", target, err))
+	if err := os.MkdirAll(mountPoint, 0755); err != nil {
+		return fmt.Errorf("failed to mkdir %s: %w", mountPoint, err)
 	}
 
-	fmt.Printf("📂 [Mount] Mounting %s -> %s\n", source, target)
-	cmd := exec.Command("mount", source, target)
+	luksLog.Infof("Mounting %s -> %s", devicePath, mountPoint)
+	cmd := exec.Command("mount", devicePath, mountPoint)
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		panic(fmt.Sprintf("❌ Mount failed: %v", err))
+		return fmt.Errorf("mount failed: %w", err)
 	}
+
+	luksLog.Info("Mount completed successfully")
+	return nil
 }
