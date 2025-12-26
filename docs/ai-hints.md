@@ -65,7 +65,18 @@ infrastructure:
   - `log.Warnf()` for warnings
   - `log.Errorf()` for errors (but use `fmt.Errorf()` for error construction)
 
+
+### 測試產物生成
+
+- 所有測試需要編譯 binary 時，一律生成於 `/bin/` 目錄。
+  - 例如：`go build -o /bin/test-binary ...`
+
 ### Naming Conventions
+
+
+- **AI 生成報告/分析檔案命名**：
+  - 任何 AI 協助生成的報告或分析檔案，無論副檔名與檔名為何，一律採用 `*.report.*` 格式。
+  - 例如：`summary.report.md`、`security-check.report.txt`、`2025-12-27.report.json`
 
 - **Blueprint over Manifest**: Use "blueprint" terminology for configuration files
   - Struct name: `config.Blueprint` (not `config.Manifest`)
