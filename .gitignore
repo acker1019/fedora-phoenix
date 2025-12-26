@@ -1,0 +1,47 @@
+# Go build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency directories
+/vendor/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and config
+secrets.yml
+*.env
+.env.*
+
+# Phoenix specific
+phoenix.yml
+secrets.yml
+
+# Others
+*.coverage
+*.prof
+*.cache
+
+# Markdown preview cache
+*.md.html
+
+# Ignore docs build output
+/docs/_build/
