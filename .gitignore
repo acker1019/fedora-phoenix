@@ -27,13 +27,15 @@
 Thumbs.db
 
 # Secrets and config
-secrets.yml
 *.env
 .env.*
 
 # Phoenix specific
 phoenix.yml
 secrets.yml
+
+# Reports
+*.report.*
 
 # Others
 *.coverage
