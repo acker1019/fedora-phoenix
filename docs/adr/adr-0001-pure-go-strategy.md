@@ -1,4 +1,4 @@
-# ADR 0001: 使用純 Go 靜態編譯程式作為單一系統還原工具
+# ADR 0001: Pure Go Strategy
 
 > **Project:** Fedora Phoenix
 > **Status:** ✅ Accepted

@@ -1,9 +1,9 @@
-# ADR 0002: 分層區塊架構與精細化權限控制
+# ADR 0002: Block Architecture
 
 > **Project:** Fedora Phoenix
 > **Status:** ✅ Accepted (Revised)
 > **Date:** 2025-12-26
-> **Refers to:** [ADR 0001](./adr-0001.md) (Pure Go Strategy)
+> **Refers to:** [ADR 0001](./adr-0001-pure-go-strategy.md) (Pure Go Strategy)
 
 ---
 
