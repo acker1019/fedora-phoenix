@@ -15,6 +15,7 @@
 
 # IDE/editor files
 .vscode/
+!.vscode/*.example.json
 .idea/
 *.swp
 *.swo
