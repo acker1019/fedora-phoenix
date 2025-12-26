@@ -52,6 +52,46 @@ infrastructure:
 ✅ **Good** (Abstract):
 > Describes底層儲存與硬體資源的對應關係，讓 Engine 能夠適應不同的硬體分區規劃。
 
+### Wishlist Items
+
+When adding items to [wishlist.md](wishlist.md):
+
+- **Concept Only**: Record only the high-level concept and purpose
+- **No Implementation Details**: Do NOT elaborate on:
+  - Specific CLI flags or commands
+  - Configuration schema or YAML examples
+  - Code structure or function signatures
+  - Step-by-step implementation plans
+- **Minimalist Approach**: Each wishlist item should contain:
+  - 概述 (Overview): 1-2 sentences describing what the feature does
+  - 優先級 (Priority): Low/Medium/High
+  - 相關 ADR (Related ADRs): Optional references
+
+**Example:**
+
+❌ **Bad** (Too Detailed):
+
+```markdown
+## 🔐 LUKS-Encrypted Swap
+
+### Implementation
+- Mode 1: Dedicated partition
+- Mode 2: Swap file
+- Schema: system.swap.luks.device, system.swap.luks.size
+```
+
+✅ **Good** (Concept Only):
+
+```markdown
+## 🔐 LUKS-Encrypted Swap
+
+### 概述
+支援設定 LUKS 加密的 Swap 分割區。
+
+### 優先級
+**Medium** - 安全性需求
+```
+
 ---
 
 ## 🔧 Code Conventions

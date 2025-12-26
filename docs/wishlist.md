@@ -38,3 +38,29 @@ sudo phoenix provision --secrets=secrets.yml --dry-run
 
 ### 相關 ADR
 - 需要確保與 ADR-0005 (Idempotency Pattern) 的 Check-Diff-Act 結構相容
+
+---
+
+## 🔐 LUKS-Encrypted Swap
+
+### 概述
+支援設定 LUKS 加密的 Swap 分割區。
+
+### 優先級
+**Medium** - 安全性需求
+
+### 相關 ADR
+- ADR-0002 (Block Architecture) - Block II: Infrastructure
+
+---
+
+## 🔒 TPM Management
+
+### 概述
+支援 TPM (Trusted Platform Module) 相關操作與管理。
+
+### 優先級
+**Medium** - 安全性與硬體整合需求
+
+### 相關 ADR
+- ADR-0002 (Block Architecture) - Block II: Infrastructure
