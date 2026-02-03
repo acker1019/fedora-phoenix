@@ -1,5 +1,10 @@
 version: "1.0"
 
+# Identity: Target user configuration
+identity:
+  username: "user"
+  shell: "/bin/zsh"
+
 # Infrastructure: Hardware and storage configuration
 infrastructure:
   luks:
@@ -14,24 +19,38 @@ system:
     - zsh
     - docker
     - fprintd
-    - stow
   pinned_packages: []
   services: []
 
-# Identity: Target user configuration
-identity:
-  username: "user"
-  shell: "/bin/zsh"
+  # Users and groups (name only, no ID)
+  users:
+    - name: "docker"
+      system: true
+      groups:
+        - docker
+
+    - name: "devuser"
+      system: false
+      groups:
+        - wheel  # sudoer via wheel group
+        - docker
+
+  groups:
+    - name: "docker"
+      system: true
 
 # UserSpace: User-level configuration (Block IV)
 userspace:
-  stow:
-    source_dir: "~/dotfiles"
-    target_dir: "~"
-    packages:
-      - zsh
-      - nvim
-      - git
+  harvest:
+    # Paths to collect during harvest (including large files)
+    paths:
+      - "~/.zshrc"
+      - "~/.config/nvim/"
+      - "~/.ssh/"
+      - "~/.gitconfig"
+      - "~/Documents/"
+      - "~/Videos/"
+
   repos:
     - url: "git@github.com:user/project-alpha.git"
       dest: "~/Workspace/project-alpha"
