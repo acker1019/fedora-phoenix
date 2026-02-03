@@ -64,5 +64,55 @@ Dependencies: Standard Library only (mostly).
 
 Target OS: Fedora Linux Workstation (latest)
 
+📋 Usage
+
+### Build
+
+```bash
+go build -o bin/phoenix cmd/phoenix/main.go
+```
+
+### Commands
+
+#### `phoenix provision`
+
+Start the full restoration protocol.
+
+**Required Flags:**
+
+- `-s, --secrets <path>`: Path to secrets YAML file (required)
+
+**Optional Flags:**
+
+- `-b, --blueprint <path>`: Path to blueprint YAML file (default: `phoenix.yml`)
+- `-d, --dotfiles-archive <path>`: Path to dotfiles tarball (.tgz)
+
+**Example:**
+
+```bash
+sudo ./phoenix provision \
+  --secrets=/path/to/secrets.yml \
+  --blueprint=phoenix.yml \
+  --dotfiles-archive=dotfiles.tgz
+```
+
+**What it does:**
+
+1. Unlocks LUKS encrypted partition
+2. Mounts persistent data
+3. Installs system packages
+4. Restores dotfiles
+
+#### `phoenix version`
+
+Print version information and VCS commit hash.
+
+**Example:**
+
+```bash
+./phoenix version
+# Output: Fedora Phoenix dev (commit: a1b2c3d)
+```
+
 ⚠️ Disclaimer
 TODO
