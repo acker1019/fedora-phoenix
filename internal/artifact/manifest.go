@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/acker1019/fedora-phoenix/internal/logging"
+	"github.com/acker1019/fedora-trisolaran/internal/logging"
 	"gopkg.in/yaml.v3"
 )
 

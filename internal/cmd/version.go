@@ -9,7 +9,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of Phoenix",
+	Short: "Print the version number of Trisolaran",
 	Run: func(cmd *cobra.Command, args []string) {
 		version := "dev"
 		commit := "unknown"
@@ -32,9 +32,9 @@ var versionCmd = &cobra.Command{
 
 		// Format output
 		if dirty {
-			fmt.Printf("Fedora Phoenix %s (commit: %s-dirty)\n", version, commit)
+			fmt.Printf("Fedora Trisolaran %s (commit: %s-dirty)\n", version, commit)
 		} else {
-			fmt.Printf("Fedora Phoenix %s (commit: %s)\n", version, commit)
+			fmt.Printf("Fedora Trisolaran %s (commit: %s)\n", version, commit)
 		}
 	},
 }

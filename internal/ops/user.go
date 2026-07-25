@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/acker1019/fedora-phoenix/internal/logging"
-	"github.com/acker1019/fedora-phoenix/internal/utils"
+	"github.com/acker1019/fedora-trisolaran/internal/logging"
+	"github.com/acker1019/fedora-trisolaran/internal/utils"
 )
 
 var userLog = logging.WithSource("ops/user")

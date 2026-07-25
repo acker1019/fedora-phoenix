@@ -6,8 +6,8 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/acker1019/fedora-phoenix/internal/config"
-	"github.com/acker1019/fedora-phoenix/internal/logging"
+	"github.com/acker1019/fedora-trisolaran/internal/config"
+	"github.com/acker1019/fedora-trisolaran/internal/logging"
 )
 
 var accountLog = logging.WithSource("ops/account")

@@ -4,31 +4,31 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/acker1019/fedora-phoenix/internal/artifact"
-	"github.com/acker1019/fedora-phoenix/internal/config"
-	"github.com/acker1019/fedora-phoenix/internal/utils"
+	"github.com/acker1019/fedora-trisolaran/internal/artifact"
+	"github.com/acker1019/fedora-trisolaran/internal/config"
+	"github.com/acker1019/fedora-trisolaran/internal/utils"
 
 	"github.com/spf13/cobra"
 )
 
-var harvestOutput string
+var dehydraOutput string
 
-// harvestCmd represents the harvest command
-var harvestCmd = &cobra.Command{
-	Use:   "harvest",
+// dehydraCmd represents the dehydra command
+var dehydraCmd = &cobra.Command{
+	Use:   "dehydra",
 	Short: "Collect configured paths into a single artifact",
 	Long:  `Reads userspace.harvest.paths from the blueprint and packs them into an artifact tgz (ADR-0008).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runHarvest()
+		runDehydra()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(harvestCmd)
-	harvestCmd.Flags().StringVarP(&harvestOutput, "output", "o", "phoenix-backup.tgz", "Path to write the artifact")
+	rootCmd.AddCommand(dehydraCmd)
+	dehydraCmd.Flags().StringVarP(&dehydraOutput, "output", "o", "trisolaran-backup.tgz", "Path to write the artifact")
 }
 
-func runHarvest() {
+func runDehydra() {
 	blueprint, err := config.LoadBlueprint(blueprintPath)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load blueprint: %v", err))
@@ -49,10 +49,10 @@ func runHarvest() {
 		paths[i] = utils.ExpandPath(p, homeDir)
 	}
 
-	fmt.Printf("🌾 Harvesting %d paths...\n", len(paths))
-	if err := artifact.Pack(paths, harvestOutput); err != nil {
+	fmt.Printf("🍂 Dehydrating %d paths...\n", len(paths))
+	if err := artifact.Pack(paths, dehydraOutput); err != nil {
 		panic(fmt.Sprintf("Failed to pack artifact: %v", err))
 	}
 
-	fmt.Printf("✓ Artifact written to %s\n", harvestOutput)
+	fmt.Printf("✓ Artifact written to %s\n", dehydraOutput)
 }

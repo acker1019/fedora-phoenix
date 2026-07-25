@@ -4,36 +4,36 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/acker1019/fedora-phoenix/internal/artifact"
-	"github.com/acker1019/fedora-phoenix/internal/config"
-	"github.com/acker1019/fedora-phoenix/internal/ops"
-	"github.com/acker1019/fedora-phoenix/internal/session"
-	"github.com/acker1019/fedora-phoenix/internal/utils"
+	"github.com/acker1019/fedora-trisolaran/internal/artifact"
+	"github.com/acker1019/fedora-trisolaran/internal/config"
+	"github.com/acker1019/fedora-trisolaran/internal/ops"
+	"github.com/acker1019/fedora-trisolaran/internal/session"
+	"github.com/acker1019/fedora-trisolaran/internal/utils"
 
 	"github.com/spf13/cobra"
 )
 
-// provisionCmd represents the provision command
-var provisionCmd = &cobra.Command{
-	Use:   "provision",
-	Short: "Start the full restoration protocol",
+// rehydraCmd represents the rehydra command
+var rehydraCmd = &cobra.Command{
+	Use:   "rehydra",
+	Short: "Start the full rehydration protocol",
 	Long:  `Unlock LUKS, mount data, install packages, and restore user space from an artifact.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runProvision()
+		runRehydra()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(provisionCmd)
-	// 如果 provision 有自己專屬的 flag，可以在這裡加
-	// provisionCmd.Flags().BoolP("dry-run", "d", false, "Preview changes only")
+	rootCmd.AddCommand(rehydraCmd)
+	// 如果 rehydra 有自己專屬的 flag，可以在這裡加
+	// rehydraCmd.Flags().BoolP("dry-run", "d", false, "Preview changes only")
 }
 
-func runProvision() {
+func runRehydra() {
 	// 1. Validate Flags
 	if secretsPath == "" {
 		fmt.Println("❌ Error: --secrets flag is required.")
-		fmt.Println("Usage: sudo phoenix provision --secrets=/path/to/secrets.yml")
+		fmt.Println("Usage: sudo tri rehydra --secrets=/path/to/secrets.yml")
 		os.Exit(1)
 	}
 
@@ -43,7 +43,7 @@ func runProvision() {
 		os.Exit(1)
 	}
 
-	fmt.Println("🔥 Initiating Phoenix Protocol...")
+	fmt.Println("💧 Initiating Rehydration Protocol...")
 
 	// ============================================================================
 	// Initialize Session
@@ -69,7 +69,7 @@ func runProvision() {
 	// ============================================================================
 	fmt.Println("🔑 Step 1/5: Loading configuration...")
 
-	// Load Blueprint (phoenix.yml)
+	// Load Blueprint (trisolaran.yml)
 	sess.Blueprint, err = config.LoadBlueprint(blueprintPath)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load blueprint: %v", err))
@@ -182,5 +182,5 @@ func runProvision() {
 		}
 	}
 
-	fmt.Println("✨ Phoenix Protocol Complete. Welcome back, Commander.")
+	fmt.Println("✨ Rehydration Complete. Welcome back, Commander.")
 }

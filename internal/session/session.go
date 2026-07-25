@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/acker1019/fedora-phoenix/internal/config"
+	"github.com/acker1019/fedora-trisolaran/internal/config"
 )
 
 // Session holds all runtime state for a single provision execution.

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/acker1019/fedora-phoenix/internal/logging"
+	"github.com/acker1019/fedora-trisolaran/internal/logging"
 )
 
 var unpackLog = logging.WithSource("artifact/unpack")

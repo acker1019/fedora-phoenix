@@ -1,14 +1,17 @@
-🦅 fedora-phoenix
+🌊 fedora-trisolaran
 Nuke your OS. Keep your soul.
 
 A single-binary, zero-dependency provisioning tool dedicated to Fedora Linux.
+
+👤 About
+Built by a Fedora enthusiast who insists on running bleeding-edge Linux as their main productivity environment — which comes with frequent updates and just as frequent backups. fedora-trisolaran exists to make that cycle painless.
 
 📖 The "Why"
 I break my Fedora setup—often. Whether it's kernel experiments or messing with runtimes, I need the ability to wipe my root partition (/) and start fresh without hesitation.
 
 I tried Shell Scripts: brittle, hard to handle errors, spaghetti code. I tried Ansible: slow, requires installing Python/pip first, YAML hell, and feels like killing a fly with a bazooka.
 
-fedora-phoenix is the answer. It treats your laptop infrastructure as code, but real code (Go), not configuration files.
+fedora-trisolaran is the answer. It treats your laptop infrastructure as code, but real code (Go), not configuration files.
 
 ✨ Key Features (The Selling Points)
 🚀 Zero Dependency (Single Binary)
@@ -19,7 +22,7 @@ Designed for the Framework Laptop (and similar setups) with a split partition st
 
 Root (/): Ephemeral, formatted on every reinstall.
 
-Work (/dev/nvme0n1p4): LUKS encrypted, persistent. Phoenix handles the decryption (securely in RAM), unlocking, and mounting of your persistent data, seamlessly bind-mounting it back to your $HOME.
+Work (/dev/nvme0n1p4): LUKS encrypted, persistent. Trisolaran handles the decryption (securely in RAM), unlocking, and mounting of your persistent data, seamlessly bind-mounting it back to your $HOME.
 
 🐧 Fedora Native & Unapologetic
 We don't support Ubuntu, Arch, or macOS. By hardcoding logic for dnf, systemd, and GNOME, we achieve blistering speed and absolute reliability. No abstraction layers, no "cross-platform" bloat.
@@ -33,19 +36,19 @@ Go
 ops.EnsurePackages("docker", "zsh", "fprintd")
 ops.EnsureService("docker")
 ops.EnsureSymlink(persistentData+"/Workspace", home+"/Workspace")
-workflow: The "Phoenix" Protocol
+workflow: The "Trisolaran" Protocol (see ADR-0009)
 Nuke: Install a fresh Fedora from Live USB. Format /. Keep LUKS partition untouched.
 
-Download: Pull the latest phoenix binary from your S3/EC2.
+Download: Pull the latest tri binary from your S3/EC2.
 
 Execute:
 
 Bash
 
-sudo ./phoenix
+sudo ./tri rehydra
 Unlock: Enter your LUKS password once.
 
-Relax: Go grab a coffee. Phoenix will:
+Relax: Go grab a coffee. Trisolaran will:
 
 Decrypt and mount your work data.
 
@@ -53,7 +56,7 @@ Install all system/dev packages (DNF).
 
 Configure Systemd services & User shell.
 
-Restore dotfiles.
+Restore user space from an artifact (see `tri dehydra` below).
 
 Reborn: Return to a "World Line Restored" environment.
 
@@ -69,14 +72,14 @@ Target OS: Fedora Linux Workstation (latest)
 ### Build
 
 ```bash
-go build -o bin/phoenix cmd/phoenix/main.go
+go build -o bin/tri cmd/trisolaran/trisolaran.go
 ```
 
 ### Commands
 
-#### `phoenix provision`
+#### `tri rehydra`
 
-Start the full restoration protocol.
+Start the full rehydration protocol.
 
 **Required Flags:**
 
@@ -84,16 +87,16 @@ Start the full restoration protocol.
 
 **Optional Flags:**
 
-- `-b, --blueprint <path>`: Path to blueprint YAML file (default: `phoenix.yml`)
-- `-a, --artifact <path>`: Path to artifact tgz produced by `phoenix harvest` (see [ADR-0008](docs/adr/adr-0008-artifact-storage-format.md))
+- `-b, --blueprint <path>`: Path to blueprint YAML file (default: `trisolaran.yml`)
+- `-a, --artifact <path>`: Path to artifact tgz produced by `tri dehydra` (see [ADR-0008](docs/adr/adr-0008-artifact-storage-format.md))
 
 **Example:**
 
 ```bash
-sudo ./phoenix provision \
+sudo ./tri rehydra \
   --secrets=/path/to/secrets.yml \
-  --blueprint=phoenix.yml \
-  --artifact=phoenix-backup-20260203.tgz
+  --blueprint=trisolaran.yml \
+  --artifact=trisolaran-backup-20260203.tgz
 ```
 
 **What it does:**
@@ -103,29 +106,33 @@ sudo ./phoenix provision \
 3. Installs system packages, ensures users/groups
 4. Restores user space from the artifact (`--artifact`)
 
-#### `phoenix harvest`
+#### `tri dehydra`
 
 Collect the paths configured under `userspace.harvest.paths` in the blueprint into a single artifact.
 
 **Optional Flags:**
 
-- `-o, --output <path>`: Path to write the artifact (default: `phoenix-backup.tgz`)
+- `-o, --output <path>`: Path to write the artifact (default: `trisolaran-backup.tgz`)
 
 **Example:**
 
 ```bash
-./phoenix harvest --blueprint=phoenix.yml --output=phoenix-backup-20260203.tgz
+./tri dehydra --blueprint=trisolaran.yml --output=trisolaran-backup-20260203.tgz
 ```
 
-#### `phoenix version`
+#### `tri stargazing`
+
+Observe system state and drift. Not yet implemented — see [ADR-0009](docs/adr/adr-0009-trisolaran-rebranding.md).
+
+#### `tri version`
 
 Print version information and VCS commit hash.
 
 **Example:**
 
 ```bash
-./phoenix version
-# Output: Fedora Phoenix dev (commit: a1b2c3d)
+./tri version
+# Output: Fedora Trisolaran dev (commit: a1b2c3d)
 ```
 
 ⚠️ Disclaimer
