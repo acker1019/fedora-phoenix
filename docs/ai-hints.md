@@ -94,6 +94,38 @@ When adding items to [wishlist.md](wishlist.md):
 
 ---
 
+## 🧪 Testing Policy
+
+- **Never proactively bring up testing** — do not suggest, offer, or mention writing/running tests unless the user explicitly asks for it.
+
+---
+
+## 🔀 Commit Workflow
+
+Never proactively ask or suggest whether to commit. Only take any commit-related action (staging, committing, drafting messages) when the user explicitly asks for a commit.
+
+When the user does ask for a commit, there are two scenarios:
+
+### Scenario A: User already staged files
+
+Trigger: user says something like "commit the staged files" — they ran `git add` themselves first.
+
+- Inspect the staged diff and commit it as a **single commit**.
+- If the user described the commit content in Chinese, translate it into an **English** commit message.
+- If the user gave no description, write the commit message yourself based on the diff and surrounding context.
+- Execute the commit directly — no need to ask for confirmation in this scenario.
+
+### Scenario B: Nothing staged yet
+
+Trigger: user asks for a commit but hasn't staged anything.
+
+- Inspect the full diff and split it into multiple commits by **atomicity of change** (each commit should represent one coherent, self-contained change).
+- Draft the commit message for each proposed commit (English).
+- **List the proposed split + messages for the user to review — do NOT commit yet.**
+- Only execute the commits after the user confirms (they may edit the split or messages first).
+
+---
+
 ## 🔧 Code Conventions
 
 ### Logging
@@ -149,4 +181,4 @@ Before completing documentation work:
 
 ---
 
-**Last Updated:** 2025-12-26
+**Last Updated:** 2026-07-25 (commit workflow added)
