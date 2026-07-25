@@ -72,7 +72,7 @@ func CleanupSecrets(path string) {
 
 // secureOverwrite overwrites the file with cryptographically secure random data.
 // This prevents file recovery from filesystem-level artifacts.
-func secureOverwrite(path string) error {
+func secureOverwrite(path string) (err error) {
 	// Get file size
 	info, err := os.Stat(path)
 	if err != nil {
@@ -89,7 +89,11 @@ func secureOverwrite(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file for overwrite: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("failed to close file after overwrite: %w", cerr)
+		}
+	}()
 
 	// Generate random data
 	randomData := make([]byte, fileSize)

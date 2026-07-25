@@ -40,10 +40,17 @@ func UnlockLuks(devicePath, mapperName, password string) error {
 		return fmt.Errorf("failed to start cryptsetup: %w", err)
 	}
 
-	// Write password and close pipe
+	// Write password and close pipe.
+	// Runs in a goroutine, so errors here can't propagate as a return value;
+	// cmd.Wait() below will also fail if the write didn't succeed, but log
+	// explicitly so the root cause is visible.
 	go func() {
-		defer stdin.Close()
-		io.WriteString(stdin, password)
+		if _, err := io.WriteString(stdin, password); err != nil {
+			luksLog.Warnf("failed to write password to stdin: %v", err)
+		}
+		if err := stdin.Close(); err != nil {
+			luksLog.Warnf("failed to close stdin pipe: %v", err)
+		}
 	}()
 
 	if err := cmd.Wait(); err != nil {
