@@ -1,0 +1,38 @@
+version: '3'
+
+env:
+  GOOS: linux
+  GOARCH: amd64
+
+tasks:
+  build:
+    desc: Cross-compile the tri binary for Linux amd64
+    cmds:
+      - go build -o bin/tri ./cmd/trisolaran
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  check:
+    desc: Run build, vet, and lint together
+    cmds:
+      - task: build
+      - task: vet
+      - task: lint
+
+  export:
+    desc: Package the tri binary with the files needed to run it into dist/trisolaran
+    deps: [build]
+    cmds:
+      - mkdir -p dist/trisolaran
+      - cp bin/tri dist/trisolaran/tri
+      - cp trisolaran.example.yml dist/trisolaran/trisolaran.yml
+      - cp secrets.example.yml dist/trisolaran/secrets.yml
+      - echo "Exported to dist/trisolaran/"
