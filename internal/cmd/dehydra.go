@@ -17,7 +17,7 @@ var dehydraOutput string
 var dehydraCmd = &cobra.Command{
 	Use:   "dehydra",
 	Short: "Collect configured paths into a single artifact",
-	Long:  `Reads userspace.harvest.paths from the blueprint and packs them into an artifact tgz (ADR-0008).`,
+	Long:  `Reads userspace.dehydration.paths from the blueprint and packs them into an artifact tgz (ADR-0008).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runDehydra()
 	},
@@ -34,8 +34,8 @@ func runDehydra() {
 		panic(fmt.Sprintf("Failed to load blueprint: %v", err))
 	}
 
-	if len(blueprint.UserSpace.Harvest.Paths) == 0 {
-		fmt.Println("❌ Error: no paths configured under userspace.harvest.paths")
+	if len(blueprint.UserSpace.Dehydration.Paths) == 0 {
+		fmt.Println("❌ Error: no paths configured under userspace.dehydration.paths")
 		os.Exit(1)
 	}
 
@@ -44,8 +44,8 @@ func runDehydra() {
 		panic(fmt.Sprintf("Failed to determine home directory: %v", err))
 	}
 
-	paths := make([]string, len(blueprint.UserSpace.Harvest.Paths))
-	for i, p := range blueprint.UserSpace.Harvest.Paths {
+	paths := make([]string, len(blueprint.UserSpace.Dehydration.Paths))
+	for i, p := range blueprint.UserSpace.Dehydration.Paths {
 		paths[i] = utils.ExpandPath(p, homeDir)
 	}
 

@@ -1,6 +1,6 @@
 # Anti-Requirements (反向需求清單)
 
-> **目的**: 明確說明 Phoenix **不需要**、**不應該** 實作的功能
+> **目的**: 明確說明 Trisolaran **不需要**、**不應該** 實作的功能
 > **受眾**: AI Agents、未來的貢獻者
 
 ---
@@ -9,11 +9,11 @@
 
 ### 錯誤理解
 
-認為 Phoenix 需要像資料庫 transaction 一樣的 rollback 機制，在失敗時需要「還原」到執行前的狀態。
+認為 Trisolaran 需要像資料庫 transaction 一樣的 rollback 機制，在失敗時需要「還原」到執行前的狀態。
 
 ### 正確理解
 
-Phoenix 採用 **Playbook 模式**，不是 Script 模式：
+Trisolaran 採用 **Playbook 模式**，不是 Script 模式：
 - 所有操作都是 **冪等的 (Idempotent)**，可以安全地重複執行
 - 失敗時的正確做法是：**修正問題後重新執行 (Rerun)**，而不是 Rollback
 
@@ -32,7 +32,7 @@ Playbook Philosophy:
 修正問題 (例如恢復網路)
          │
          ▼
-重新執行 phoenix provision
+重新執行 tri rehydra
   • 已完成的步驟會被跳過 (Check-Diff-Act)
   • 僅執行未完成的部分
   • 最終達到期望狀態
@@ -42,13 +42,13 @@ Playbook Philosophy:
 
 ```bash
 # 第一次執行，在安裝套件時失敗 (網路問題)
-$ sudo phoenix provision --secrets=secrets.yml
+$ sudo tri rehydra --secrets=secrets.yml
 ✓ LUKS unlocked
 ✓ Device mounted
 ✗ Package installation failed: network timeout
 
 # 修正網路後，直接重新執行
-$ sudo phoenix provision --secrets=secrets.yml
+$ sudo tri rehydra --secrets=secrets.yml
 ✓ LUKS already unlocked, skipping
 ✓ Device already mounted, skipping
 ✓ Installing remaining packages...  ← 接續未完成的部分
@@ -57,7 +57,7 @@ $ sudo phoenix provision --secrets=secrets.yml
 
 ### 正確的錯誤處理策略
 
-Phoenix 應該專注於：
+Trisolaran 應該專注於：
 
 1. **明確的錯誤訊息**
    ```
@@ -78,7 +78,7 @@ Phoenix 應該專注於：
 
 ## 📝 核心哲學
 
-**Phoenix 是 Playbook，不是 Transaction**
+**Trisolaran 是 Playbook，不是 Transaction**
 
 - **Declarative**, not Imperative (宣告式，非命令式)
 - **Idempotent**, not Transactional (冪等性，非事務性)

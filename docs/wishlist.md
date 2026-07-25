@@ -8,12 +8,12 @@
 ## 🎯 Dry-Run Mode
 
 ### 概述
-在不實際執行變更的情況下，預覽 Phoenix 會做什麼。
+在不實際執行變更的情況下，預覽 Trisolaran 會做什麼。
 
 ### 使用場景
 ```bash
 # 預覽會執行哪些操作
-sudo phoenix provision --secrets=secrets.yml --dry-run
+sudo tri rehydra --secrets=secrets.yml --dry-run
 
 # 預期輸出:
 # 🔍 DRY-RUN MODE (no changes will be made)

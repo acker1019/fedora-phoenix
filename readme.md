@@ -108,7 +108,7 @@ sudo ./tri rehydra \
 
 #### `tri dehydra`
 
-Collect the paths configured under `userspace.harvest.paths` in the blueprint into a single artifact.
+Collect the paths configured under `userspace.dehydration.paths` in the blueprint into a single artifact.
 
 **Optional Flags:**
 

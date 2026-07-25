@@ -30,7 +30,7 @@ func Pack(paths []string, outputPath string) error {
 
 	packLog.Infof("Packing %d paths into %s", len(paths), outputPath)
 
-	stageDir, err := os.MkdirTemp("", "phoenix-pack-*")
+	stageDir, err := os.MkdirTemp("", "trisolaran-pack-*")
 	if err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
@@ -40,7 +40,7 @@ func Pack(paths []string, outputPath string) error {
 		}
 	}()
 
-	protectName := fmt.Sprintf("phoenix-backup-%s", time.Now().Format("20060102"))
+	protectName := fmt.Sprintf("trisolaran-backup-%s", time.Now().Format("20060102"))
 	root := filepath.Join(stageDir, protectName)
 	fsRoot := filepath.Join(root, "fs")
 	if err := os.MkdirAll(fsRoot, 0755); err != nil {

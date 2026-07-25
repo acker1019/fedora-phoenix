@@ -31,8 +31,8 @@ Thumbs.db
 *.env
 .env.*
 
-# Phoenix specific
-phoenix.yml
+# Trisolaran specific
+trisolaran.yml
 secrets.yml
 
 # Reports

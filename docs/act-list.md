@@ -1,14 +1,14 @@
 # Acts List (Capability Inventory)
 
-> **Project:** Fedora Phoenix
+> **Project:** Fedora Trisolaran
 > **Status:** ✅ Approved for Implementation
-> **Context:** 這些 Acts 是構成 `RunProvision` 流程的原子操作
+> **Context:** 這些 Acts 是構成 `runRehydra` 流程的原子操作
 
 ---
 
 ## 📊 Overview
 
-本文件定義了 Phoenix Protocol 的所有原子操作 (Acts)，依照 [ADR-0002](./adr/adr-0002-block-architecture.md) 的四大區塊分類。
+本文件定義了 Trisolaran Protocol 的所有原子操作 (Acts)，依照 [ADR-0002](./adr/adr-0002-block-architecture.md) 的四大區塊分類。
 
 ---
 
@@ -24,7 +24,7 @@ func LoadBlueprint(path string) (*config.Blueprint, error)
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 讀取公開的 `phoenix.yml`，定義系統還原的藍圖 |
+| **Responsibility** | 讀取公開的 `trisolaran.yml`，定義系統還原的藍圖 |
 | **Logic** | File Read → YAML Unmarshal → Validate Fields |
 | **Location** | `internal/config/blueprint.go` |
 | **Status** | ✅ Implemented |
@@ -255,7 +255,7 @@ func EnsureSymlink(src, dest, username string)
 
 ---
 
-### 12. artifact.Pack (Harvest)
+### 12. artifact.Pack (Dehydration)
 
 ```go
 func Pack(paths []string, outputPath string) error
@@ -263,8 +263,8 @@ func Pack(paths []string, outputPath string) error
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 掃描 `userspace.harvest.paths`，鏡射複製進 `fs/`，產生 `filemeta.yml`，打包成 `phoenix-backup-<date>.tgz` |
-| **Command** | `phoenix harvest --output=<path>` |
+| **Responsibility** | 掃描 `userspace.dehydration.paths`，鏡射複製進 `fs/`，產生 `filemeta.yml`，打包成 `trisolaran-backup-<date>.tgz` |
+| **Command** | `tri dehydra --output=<path>` |
 | **Location** | `internal/artifact/pack.go` |
 | **Refers to** | [ADR-0008](./adr/adr-0008-artifact-storage-format.md) |
 | **Note** | filemeta.yml 只記錄 owner/group **名稱**與八進位 mode，不記錄 UID/GID |

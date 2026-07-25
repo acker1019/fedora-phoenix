@@ -1,6 +1,6 @@
-# AI Hints for Fedora Phoenix
+# AI Hints for Fedora Trisolaran
 
-> **Purpose:** This document contains guidelines and conventions for AI assistants working on the Fedora Phoenix project.
+> **Purpose:** This document contains guidelines and conventions for AI assistants working on the Fedora Trisolaran project.
 
 ---
 
@@ -164,7 +164,7 @@ Trigger: user asks for a commit but hasn't staged anything.
 | Blueprint | Manifest | Configuration schema |
 | Acts | Functions/Operations | Atomic operations |
 | Block | Module/Component | Architecture layers |
-| Phoenix Protocol | System | Overall framework name |
+| Trisolaran Protocol | System | Overall framework name |
 
 ---
 

@@ -41,8 +41,8 @@ system:
 
 # UserSpace: User-level configuration (Block IV)
 userspace:
-  harvest:
-    # Paths to collect during harvest (including large files)
+  dehydration:
+    # Paths to collect during dehydration (including large files)
     paths:
       - "~/.zshrc"
       - "~/.config/nvim/"

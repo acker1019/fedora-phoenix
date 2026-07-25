@@ -1,14 +1,14 @@
 # Core Philosophy
 
-> **Fedora Phoenix 的設計原則與核心理念**
+> **Fedora Trisolaran 的設計原則與核心理念**
 
 ---
 
 ## 🎯 核心定位
 
-Phoenix 是一個 **Playbook 工具**，而非 Script 工具。
+Trisolaran 是一個 **Playbook 工具**，而非 Script 工具。
 
-| 特性 | Script | Playbook (Phoenix) |
+| 特性 | Script | Playbook (Trisolaran) |
 |------|--------|-------------------|
 | **執行模式** | 命令式 (Imperative) | 宣告式 (Declarative) |
 | **可重複性** | 只能執行一次 | 可無限次重複執行 |
@@ -77,7 +77,7 @@ func EnsurePackage(pkg string) error {
 修正問題 (恢復網路)
          │
          ▼
-重新執行 phoenix provision
+重新執行 tri rehydra
   → 已完成的步驟自動跳過
   → 僅執行未完成的部分
 ```
@@ -96,14 +96,14 @@ func EnsurePackage(pkg string) error {
 ### 4. Local, not Remote
 **本地執行，專注單機場景**
 
-Phoenix 設計為在目標機器上執行，而非遠端控制：
+Trisolaran 設計為在目標機器上執行，而非遠端控制：
 
 ```bash
 # ✅ Good: 本地執行
-sudo phoenix provision --secrets=secrets.yml
+sudo tri rehydra --secrets=secrets.yml
 
 # ❌ Bad: 遠端執行（不支援）
-# phoenix provision --host=remote-server
+# tri rehydra --host=remote-server
 ```
 
 **理由**:
@@ -113,8 +113,8 @@ sudo phoenix provision --secrets=secrets.yml
 
 如需遠端部署，使用：
 ```bash
-scp phoenix user@remote:/tmp/
-ssh user@remote "sudo /tmp/phoenix provision --secrets=secrets.yml"
+scp tri user@remote:/tmp/
+ssh user@remote "sudo /tmp/tri rehydra --secrets=secrets.yml"
 ```
 
 ---
@@ -122,7 +122,7 @@ ssh user@remote "sudo /tmp/phoenix provision --secrets=secrets.yml"
 ### 5. Simple, not Complex
 **保持簡單，避免過度工程**
 
-Phoenix 刻意不實作：
+Trisolaran 刻意不實作：
 - ❌ 多環境配置管理 (dev/staging/prod)
 - ❌ 遠端執行與 SSH 支援
 - ❌ 複雜的相依性解析
@@ -145,7 +145,7 @@ Phoenix 刻意不實作：
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│ Engine (phoenix binary)                                     │
+│ Engine (tri binary)                                          │
 │ • Stateless                                                 │
 │ • 不包含任何配置                                              │
 │ • 可重複使用於不同機器                                         │
@@ -154,7 +154,7 @@ Phoenix 刻意不實作：
                  │ reads
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Blueprint (phoenix.yml)                                     │
+│ Blueprint (trisolaran.yml)                                  │
 │ • 宣告期望狀態                                                │
 │ • 版本控制                                                    │
 │ • 機器特定配置                                                │
@@ -213,9 +213,9 @@ func EnsureXXX(...) error {
 
 ## 🎭 與其他工具的比較
 
-### Phoenix vs Ansible
+### Trisolaran vs Ansible
 
-| 特性 | Ansible | Phoenix |
+| 特性 | Ansible | Trisolaran |
 |------|---------|---------|
 | **部署範圍** | 多機器 Fleet | 單機器 |
 | **配置語言** | YAML + Jinja2 | Pure YAML |
@@ -223,18 +223,18 @@ func EnsureXXX(...) error {
 | **執行模式** | SSH 遠端 | 本地執行 |
 | **適用場景** | 伺服器管理 | 開發機重建 |
 
-### Phoenix vs Shell Script
+### Trisolaran vs Shell Script
 
-| 特性 | Shell Script | Phoenix |
+| 特性 | Shell Script | Trisolaran |
 |------|--------------|---------|
 | **可重複性** | 通常只能執行一次 | 可無限次執行 |
 | **錯誤處理** | 需手動清理 | 自動跳過已完成 |
 | **可讀性** | 程序導向 | 宣告式配置 |
 | **維護性** | 難以測試 | 結構化設計 |
 
-### Phoenix vs NixOS
+### Trisolaran vs NixOS
 
-| 特性 | NixOS | Phoenix |
+| 特性 | NixOS | Trisolaran |
 |------|-------|---------|
 | **範圍** | 整個作業系統 | Provisioning 工具 |
 | **學習曲線** | 陡峭 | 平緩 |
@@ -255,7 +255,7 @@ func EnsureXXX(...) error {
 | GUI 介面 | 單純的 CLI 工具 |
 | 遠端執行 | 更好的本地效能 |
 
-這些都是 **刻意的設計決策**，符合 Phoenix 的定位：
+這些都是 **刻意的設計決策**，符合 Trisolaran 的定位：
 
 > **專注於單機 Fedora Workstation 的快速重建**
 
@@ -289,10 +289,10 @@ func EnsureXXX(...) error {
 
 當你考慮新增功能或修改設計時，問自己：
 
-> "這個改動是讓 Phoenix 更像 Playbook，還是更像 Script？"
+> "這個改動是讓 Trisolaran 更像 Playbook，還是更像 Script？"
 
 如果是後者，**不要做**。
 
 ---
 
-**Phoenix 的使命**：讓 Fedora Workstation 的重建像執行 `git checkout` 一樣簡單可靠。
+**Trisolaran 的使命**：讓 Fedora Workstation 的重建像執行 `git checkout` 一樣簡單可靠。

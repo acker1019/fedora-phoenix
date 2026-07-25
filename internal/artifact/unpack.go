@@ -22,7 +22,7 @@ var unpackLog = logging.WithSource("artifact/unpack")
 func Restore(archivePath string) error {
 	unpackLog.Infof("Restoring artifact: %s", archivePath)
 
-	stageDir, err := os.MkdirTemp("", "phoenix-unpack-*")
+	stageDir, err := os.MkdirTemp("", "trisolaran-unpack-*")
 	if err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
@@ -58,7 +58,7 @@ func Restore(archivePath string) error {
 	return nil
 }
 
-// findArtifactRoot locates the single "phoenix-backup-<date>" directory
+// findArtifactRoot locates the single "trisolaran-backup-<date>" directory
 // produced by Pack inside the extracted archive.
 func findArtifactRoot(stageDir string) (string, error) {
 	entries, err := os.ReadDir(stageDir)

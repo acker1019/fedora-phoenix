@@ -10,7 +10,7 @@ import (
 
 var blueprintLog = logging.WithSource("config/blueprint")
 
-// Blueprint defines the schema for the phoenix.yml configuration file.
+// Blueprint defines the schema for the trisolaran.yml configuration file.
 // It represents the declarative system restoration plan.
 type Blueprint struct {
 	Version string `yaml:"version"`
@@ -72,13 +72,13 @@ type IdentityConfig struct {
 
 // UserSpaceConfig defines user-level configuration (Block IV)
 type UserSpaceConfig struct {
-	Harvest HarvestConfig `yaml:"harvest"`
-	Repos   []RepoConfig  `yaml:"repos"`
+	Dehydration DehydrationConfig `yaml:"dehydration"`
+	Repos       []RepoConfig      `yaml:"repos"`
 }
 
-// HarvestConfig defines which paths are collected into an artifact.
+// DehydrationConfig defines which paths are collected into an artifact.
 // See ADR-0008 (Artifact Storage Format).
-type HarvestConfig struct {
+type DehydrationConfig struct {
 	Paths []string `yaml:"paths"`
 }
 
@@ -88,7 +88,7 @@ type RepoConfig struct {
 	Dest string `yaml:"dest"`
 }
 
-// LoadBlueprint reads and parses the phoenix.yml blueprint file.
+// LoadBlueprint reads and parses the trisolaran.yml blueprint file.
 func LoadBlueprint(path string) (*Blueprint, error) {
 	blueprintLog.Infof("Loading blueprint from: %s", path)
 
