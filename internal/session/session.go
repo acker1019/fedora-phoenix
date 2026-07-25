@@ -25,10 +25,6 @@ type Session struct {
 	LuksUnlocked   bool   // Whether LUKS device is currently unlocked
 	LuksMounted    bool   // Whether LUKS device is currently mounted
 
-	// Expanded Paths (from Block IV)
-	StowSourceDir string // Expanded stow source directory
-	StowTargetDir string // Expanded stow target directory
-
 	// Temporary Variables
-	DotfilesArchive string // Path to dotfiles tarball (from --dotfiles-archive flag)
+	ArtifactPath string // Path to artifact tgz (from --artifact flag)
 }

@@ -85,7 +85,7 @@ Start the full restoration protocol.
 **Optional Flags:**
 
 - `-b, --blueprint <path>`: Path to blueprint YAML file (default: `phoenix.yml`)
-- `-d, --dotfiles-archive <path>`: Path to dotfiles tarball (.tgz)
+- `-a, --artifact <path>`: Path to artifact tgz produced by `phoenix harvest` (see [ADR-0008](docs/adr/adr-0008-artifact-storage-format.md))
 
 **Example:**
 
@@ -93,15 +93,29 @@ Start the full restoration protocol.
 sudo ./phoenix provision \
   --secrets=/path/to/secrets.yml \
   --blueprint=phoenix.yml \
-  --dotfiles-archive=dotfiles.tgz
+  --artifact=phoenix-backup-20260203.tgz
 ```
 
 **What it does:**
 
 1. Unlocks LUKS encrypted partition
 2. Mounts persistent data
-3. Installs system packages
-4. Restores dotfiles
+3. Installs system packages, ensures users/groups
+4. Restores user space from the artifact (`--artifact`)
+
+#### `phoenix harvest`
+
+Collect the paths configured under `userspace.harvest.paths` in the blueprint into a single artifact.
+
+**Optional Flags:**
+
+- `-o, --output <path>`: Path to write the artifact (default: `phoenix-backup.tgz`)
+
+**Example:**
+
+```bash
+./phoenix harvest --blueprint=phoenix.yml --output=phoenix-backup-20260203.tgz
+```
 
 #### `phoenix version`
 

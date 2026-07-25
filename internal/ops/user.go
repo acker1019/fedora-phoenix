@@ -23,7 +23,11 @@ func EnsureUserShell(username, targetShell string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open /etc/passwd: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			userLog.Warnf("failed to close /etc/passwd: %v", cerr)
+		}
+	}()
 
 	var currentShell string
 	scanner := bufio.NewScanner(file)
@@ -79,57 +83,6 @@ func EnsureSymlink(src, dest, username string) error {
 	}
 
 	userLog.Info("Symlink created successfully")
-	return nil
-}
-
-// ExtractTarball extracts a tarball to the destination directory as the specified user.
-// Follows Check-Diff-Act pattern: checks if destination is non-empty before extracting.
-func ExtractTarball(archivePath, destDir, username string) error {
-	userLog.Infof("Checking tarball extraction: %s -> %s (as %s)", archivePath, destDir, username)
-
-	// Ensure destination directory exists
-	if err := utils.RunCommandAsUser(username, "mkdir", "-p", destDir); err != nil {
-		return fmt.Errorf("failed to create destination directory: %w", err)
-	}
-
-	// Check: Is destination directory non-empty?
-	entries, err := os.ReadDir(destDir)
-	if err == nil && len(entries) > 0 {
-		userLog.Infof("Destination %s is non-empty (contains %d items). Skipping extraction.", destDir, len(entries))
-		return nil
-	}
-
-	// Act: Extract tarball
-	userLog.Infof("Extracting %s to %s", archivePath, destDir)
-	if err := utils.RunCommandAsUser(username, "tar", "-xzf", archivePath, "-C", destDir); err != nil {
-		return fmt.Errorf("failed to extract tarball: %w", err)
-	}
-
-	userLog.Info("Tarball extracted successfully")
-	return nil
-}
-
-// RunStow deploys dotfiles using GNU Stow as the specified user.
-// Idempotent: stow -R (restow) is inherently idempotent - it will recreate
-// correct symlinks even if they already exist, and fix broken ones.
-func RunStow(sourceDir, targetDir string, packages []string, username string) error {
-	if len(packages) == 0 {
-		return nil
-	}
-
-	userLog.Infof("Running Stow to deploy %d packages...", len(packages))
-
-	for _, pkg := range packages {
-		userLog.Infof("Deploying package: %s", pkg)
-
-		// Act: Execute stow -R (restow)
-		// The -R flag ensures idempotency by recreating all symlinks
-		if err := utils.RunCommandAsUser(username, "stow", "-d", sourceDir, "-t", targetDir, "-R", pkg); err != nil {
-			return fmt.Errorf("failed to deploy package %s: %w", pkg, err)
-		}
-	}
-
-	userLog.Info("Stow deployment completed successfully")
 	return nil
 }
 

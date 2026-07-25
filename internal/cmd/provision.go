@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/acker1019/fedora-phoenix/internal/artifact"
 	"github.com/acker1019/fedora-phoenix/internal/config"
 	"github.com/acker1019/fedora-phoenix/internal/ops"
 	"github.com/acker1019/fedora-phoenix/internal/session"
@@ -16,7 +17,7 @@ import (
 var provisionCmd = &cobra.Command{
 	Use:   "provision",
 	Short: "Start the full restoration protocol",
-	Long:  `Unlock LUKS, mount data, install packages, and link dotfiles.`,
+	Long:  `Unlock LUKS, mount data, install packages, and restore user space from an artifact.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runProvision()
 	},
@@ -82,8 +83,8 @@ func runProvision() {
 	// Self-destruct logic
 	config.CleanupSecrets(secretsPath)
 
-	// Store dotfiles archive path
-	sess.DotfilesArchive = dotfilesArchive
+	// Store artifact path
+	sess.ArtifactPath = artifactPath
 
 	// ============================================================================
 	// Block II: Infrastructure
@@ -119,6 +120,20 @@ func runProvision() {
 	// ============================================================================
 	fmt.Println("📦 Step 3/5: Configuring system state...")
 
+	// Ensure Groups (before Users, since users may reference them)
+	if len(sess.Blueprint.System.Groups) > 0 {
+		if err := ops.EnsureGroups(sess.Blueprint.System.Groups); err != nil {
+			panic(err)
+		}
+	}
+
+	// Ensure Users
+	if len(sess.Blueprint.System.Users) > 0 {
+		if err := ops.EnsureUsers(sess.Blueprint.System.Users); err != nil {
+			panic(err)
+		}
+	}
+
 	// Install Packages
 	if len(sess.Blueprint.System.Packages) > 0 {
 		if err := ops.EnsurePackages(sess.Blueprint.System.Packages); err != nil {
@@ -152,29 +167,9 @@ func runProvision() {
 	// ============================================================================
 	fmt.Println("👤 Step 4/5: Restoring user space...")
 
-	// Expand all paths in blueprint using the determined home directory
-	sess.StowSourceDir = utils.ExpandPath(sess.Blueprint.UserSpace.Stow.SourceDir, sess.UserHome)
-	sess.StowTargetDir = utils.ExpandPath(sess.Blueprint.UserSpace.Stow.TargetDir, sess.UserHome)
-
-	// Extract Dotfiles Archive (if provided)
-	if sess.DotfilesArchive != "" {
-		if err := ops.ExtractTarball(
-			sess.DotfilesArchive,
-			sess.StowSourceDir,
-			sess.Blueprint.Identity.Username,
-		); err != nil {
-			panic(err)
-		}
-	}
-
-	// Deploy Dotfiles with Stow
-	if len(sess.Blueprint.UserSpace.Stow.Packages) > 0 {
-		if err := ops.RunStow(
-			sess.StowSourceDir,
-			sess.StowTargetDir,
-			sess.Blueprint.UserSpace.Stow.Packages,
-			sess.Blueprint.Identity.Username,
-		); err != nil {
+	// Restore Artifact (ADR-0008)
+	if sess.ArtifactPath != "" {
+		if err := artifact.Restore(sess.ArtifactPath); err != nil {
 			panic(err)
 		}
 	}

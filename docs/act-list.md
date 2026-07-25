@@ -189,6 +189,24 @@ func EnsureUserShell(username, targetShell string)
 
 ---
 
+### 9a. EnsureGroups / EnsureUsers
+
+```go
+func EnsureGroups(groups []config.GroupConfig) error
+func EnsureUsers(users []config.UserConfig) error
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | 建立 `system.groups` / `system.users` 定義的群組與使用者，並確保群組成員關係一致 |
+| **Idempotency** | `user.LookupGroup`/`user.Lookup` 檢查是否已存在；比對現有群組成員後只補缺少的部分 |
+| **Command** | `groupadd`, `useradd -m`, `usermod -a -G` |
+| **Location** | `internal/ops/account.go` |
+| **Refers to** | [ADR-0008](./adr/adr-0008-artifact-storage-format.md) |
+| **Note** | 只記錄 name，不 hardcode UID/GID——建立後一律由 OS 讀回 |
+
+---
+
 ## 👤 Block IV: User Space (用戶空間)
 
 負責使用者資料與環境。**必須透過 `RunCommandAsUser` 執行**以確保權限正確。
@@ -237,43 +255,34 @@ func EnsureSymlink(src, dest, username string)
 
 ---
 
-### 12. ExtractTarball (Artifact Injection)
+### 12. artifact.Pack (Harvest)
 
 ```go
-func ExtractTarball(archivePath, destDir, username string)
+func Pack(paths []string, outputPath string) error
 ```
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 解壓縮含有 Secrets 的 Dotfiles Artifact |
-| **Execution** | Via `RunCommandAsUser` |
-| **Command** | `tar -xzf <archive> -C <destDir>` |
-| **Location** | `internal/ops/user.go` |
-| **Refers to** | [ADR-0003](./adr/adr-0003-dotfiles-management.md) |
+| **Responsibility** | 掃描 `userspace.harvest.paths`，鏡射複製進 `fs/`，產生 `filemeta.yml`，打包成 `phoenix-backup-<date>.tgz` |
+| **Command** | `phoenix harvest --output=<path>` |
+| **Location** | `internal/artifact/pack.go` |
+| **Refers to** | [ADR-0008](./adr/adr-0008-artifact-storage-format.md) |
+| **Note** | filemeta.yml 只記錄 owner/group **名稱**與八進位 mode，不記錄 UID/GID |
 
 ---
 
-### 13. RunStow (Dotfiles Deploy)
+### 13. artifact.Restore (Provision-side Rehydration)
 
 ```go
-func RunStow(sourceDir, targetDir string, packages []string, username string)
+func Restore(archivePath string) error
 ```
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 使用 GNU Stow 部署設定檔 |
-| **Execution** | Via `RunCommandAsUser` |
-| **Command** | `stow -d <sourceDir> -t <targetDir> -R <package>` |
-| **Location** | `internal/ops/user.go` |
-| **Refers to** | [ADR-0003](./adr/adr-0003-dotfiles-management.md) |
-
-#### Logic Flow
-
-```text
-Loop over packages:
-  └─ Exec: stow -d {sourceDir} -t {targetDir} -R {package}
-     (via RunCommandAsUser)
-```
+| **Responsibility** | 解壓 Artifact，讀取 `filemeta.yml`，將 `fs/` 內容還原到系統絕對路徑，套用 mode/owner/group，並以 SHA256 驗證完整性 |
+| **Location** | `internal/artifact/unpack.go` |
+| **Refers to** | [ADR-0008](./adr/adr-0008-artifact-storage-format.md) |
+| **Note** | owner/group 一律用名稱在還原當下重新查詢 UID/GID，不信任 Artifact 內的數字 |
 
 ---
 
@@ -314,8 +323,9 @@ func GitClone(url, dest, username string)
 | **III** | EnsurePinnedPackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsureServices | ✅ Implemented | `internal/ops/systemd.go` |
 | **III** | EnsureUserShell | ✅ Implemented | `internal/ops/user.go` |
+| **III** | EnsureGroups / EnsureUsers | ✅ Implemented | `internal/ops/account.go` |
 | **IV** | RunCommandAsUser | ✅ Implemented | `internal/utils/exec.go` |
 | **IV** | EnsureSymlink | ✅ Implemented | `internal/ops/user.go` |
-| **IV** | ExtractTarball | ✅ Implemented | `internal/ops/user.go` |
-| **IV** | RunStow | ✅ Implemented | `internal/ops/user.go` |
+| **IV** | artifact.Pack | ✅ Implemented | `internal/artifact/pack.go` |
+| **IV** | artifact.Restore | ✅ Implemented | `internal/artifact/unpack.go` |
 | **IV** | GitClone | ✅ Implemented | `internal/ops/user.go` |

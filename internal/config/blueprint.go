@@ -42,9 +42,26 @@ type LuksConfig struct {
 
 // SystemConfig defines OS-level state
 type SystemConfig struct {
-	Packages       []string `yaml:"packages"`
-	PinnedPackages []string `yaml:"pinned_packages"`
-	Services       []string `yaml:"services"`
+	Packages       []string      `yaml:"packages"`
+	PinnedPackages []string      `yaml:"pinned_packages"`
+	Services       []string      `yaml:"services"`
+	Users          []UserConfig  `yaml:"users"`
+	Groups         []GroupConfig `yaml:"groups"`
+}
+
+// UserConfig defines a user account to ensure exists.
+// Only the name is recorded; UID is read back from the OS after creation.
+type UserConfig struct {
+	Name   string   `yaml:"name"`
+	System bool     `yaml:"system"`
+	Groups []string `yaml:"groups"`
+}
+
+// GroupConfig defines a group to ensure exists.
+// Only the name is recorded; GID is read back from the OS after creation.
+type GroupConfig struct {
+	Name   string `yaml:"name"`
+	System bool   `yaml:"system"`
 }
 
 // IdentityConfig defines target user characteristics
@@ -55,15 +72,14 @@ type IdentityConfig struct {
 
 // UserSpaceConfig defines user-level configuration (Block IV)
 type UserSpaceConfig struct {
-	Stow  StowConfig   `yaml:"stow"`
-	Repos []RepoConfig `yaml:"repos"`
+	Harvest HarvestConfig `yaml:"harvest"`
+	Repos   []RepoConfig  `yaml:"repos"`
 }
 
-// StowConfig defines GNU Stow deployment configuration
-type StowConfig struct {
-	SourceDir string   `yaml:"source_dir"`
-	TargetDir string   `yaml:"target_dir"`
-	Packages  []string `yaml:"packages"`
+// HarvestConfig defines which paths are collected into an artifact.
+// See ADR-0008 (Artifact Storage Format).
+type HarvestConfig struct {
+	Paths []string `yaml:"paths"`
 }
 
 // RepoConfig defines a git repository to clone
