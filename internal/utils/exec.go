@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/user"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/acker1019/fedora-trisolaran/internal/logging"
@@ -49,8 +50,19 @@ func RunCommandAsUser(username, name string, args ...string) error {
 		},
 	}
 
-	// Set HOME environment variable for the user
-	cmd.Env = append(os.Environ(), fmt.Sprintf("HOME=%s", u.HomeDir))
+	// Set HOME environment variable for the user. os.Environ() already
+	// contains root's own HOME (since this process runs as root); simply
+	// appending a new HOME entry wouldn't override it; because getenv()
+	// on Linux/glibc scans front-to-back and returns the FIRST match,
+	// so the target user's key/config lookups (e.g. via git/ssh) would
+	// silently keep using root's $HOME. Filter out the old entry first.
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, e := range os.Environ() {
+		if !strings.HasPrefix(e, "HOME=") {
+			env = append(env, e)
+		}
+	}
+	cmd.Env = append(env, fmt.Sprintf("HOME=%s", u.HomeDir))
 
 	// Connect stdout/stderr for visibility
 	cmd.Stdout = os.Stdout
