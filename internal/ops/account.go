@@ -78,6 +78,15 @@ func createUser(u config.UserConfig) error {
 	if u.System {
 		args = append(args, "-r")
 	}
+
+	// If a group with the same name as the user already exists (e.g. it was
+	// declared under system.groups), reuse it as the primary group instead
+	// of letting useradd auto-create a same-named private group, which
+	// fails because that group name is already taken.
+	if _, err := user.LookupGroup(u.Name); err == nil {
+		args = append(args, "-g", u.Name)
+	}
+
 	args = append(args, u.Name)
 
 	accountLog.Infof("Creating user: %s", u.Name)
