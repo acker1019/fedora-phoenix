@@ -80,6 +80,12 @@ func runRehydra() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load secrets: %v", err))
 	}
+
+	hasLuks := sess.Blueprint.HasLuks()
+	if hasLuks && sess.Secrets.LuksPassword == "" {
+		panic("secrets.luks_password is required because infrastructure.luks is configured in the blueprint")
+	}
+
 	// Self-destruct logic
 	config.CleanupSecrets(secretsPath)
 
@@ -91,29 +97,33 @@ func runRehydra() {
 	// ============================================================================
 	fmt.Println("🔧 Step 2/5: Setting up infrastructure...")
 
-	// Store infrastructure info in session
-	sess.LuksMapperName = sess.Blueprint.Infrastructure.Luks.MapperName
-	sess.LuksMountPoint = sess.Blueprint.Infrastructure.Luks.MountPoint
+	if hasLuks {
+		// Store infrastructure info in session
+		sess.LuksMapperName = sess.Blueprint.Infrastructure.Luks.MapperName
+		sess.LuksMountPoint = sess.Blueprint.Infrastructure.Luks.MountPoint
 
-	// LUKS Unlock
-	err = ops.UnlockLuks(
-		sess.Blueprint.Infrastructure.Luks.Device,
-		sess.LuksMapperName,
-		sess.Secrets.LuksPassword,
-	)
-	if err != nil {
-		panic(err)
-	}
-	sess.LuksUnlocked = true
+		// LUKS Unlock
+		err = ops.UnlockLuks(
+			sess.Blueprint.Infrastructure.Luks.Device,
+			sess.LuksMapperName,
+			sess.Secrets.LuksPassword,
+		)
+		if err != nil {
+			panic(err)
+		}
+		sess.LuksUnlocked = true
 
-	// Mount Device
-	if err := ops.MountDevice(
-		sess.LuksMapperName,
-		sess.LuksMountPoint,
-	); err != nil {
-		panic(err)
+		// Mount Device
+		if err := ops.MountDevice(
+			sess.LuksMapperName,
+			sess.LuksMountPoint,
+		); err != nil {
+			panic(err)
+		}
+		sess.LuksMounted = true
+	} else {
+		fmt.Println("↷ No infrastructure.luks configured, skipping LUKS unlock/mount.")
 	}
-	sess.LuksMounted = true
 
 	// ============================================================================
 	// Block III: System State

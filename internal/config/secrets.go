@@ -41,11 +41,6 @@ func LoadSecrets(path string) (*Secrets, error) {
 		return nil, fmt.Errorf("failed to parse YAML structure: %w", err)
 	}
 
-	// Validation: Ensure critical secrets are present
-	if book.LuksPassword == "" {
-		return nil, fmt.Errorf("invalid secrets file: 'luks_password' is missing or empty")
-	}
-
 	return &book, nil
 }
 

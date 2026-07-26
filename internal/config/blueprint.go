@@ -118,21 +118,32 @@ func LoadBlueprint(path string) (*Blueprint, error) {
 	return &bp, nil
 }
 
+// HasLuks reports whether infrastructure.luks is configured in the blueprint.
+// LUKS is optional: an absent `infrastructure` block or an empty `luks`
+// sub-block means the rehydration protocol skips LUKS unlock/mount entirely.
+func (bp *Blueprint) HasLuks() bool {
+	l := bp.Infrastructure.Luks
+	return l.Device != "" || l.MapperName != "" || l.MountPoint != ""
+}
+
 // validateBlueprint ensures critical fields are present
 func validateBlueprint(bp *Blueprint) error {
 	if bp.Version == "" {
 		return fmt.Errorf("version field is required")
 	}
 
-	// Validate Infrastructure
-	if bp.Infrastructure.Luks.Device == "" {
-		return fmt.Errorf("infrastructure.luks.device is required")
-	}
-	if bp.Infrastructure.Luks.MapperName == "" {
-		return fmt.Errorf("infrastructure.luks.mapper_name is required")
-	}
-	if bp.Infrastructure.Luks.MountPoint == "" {
-		return fmt.Errorf("infrastructure.luks.mount_point is required")
+	// Validate Infrastructure: LUKS is optional, but if any field is set,
+	// all three are required (a partially configured LUKS block is an error).
+	if bp.HasLuks() {
+		if bp.Infrastructure.Luks.Device == "" {
+			return fmt.Errorf("infrastructure.luks.device is required when infrastructure.luks is configured")
+		}
+		if bp.Infrastructure.Luks.MapperName == "" {
+			return fmt.Errorf("infrastructure.luks.mapper_name is required when infrastructure.luks is configured")
+		}
+		if bp.Infrastructure.Luks.MountPoint == "" {
+			return fmt.Errorf("infrastructure.luks.mount_point is required when infrastructure.luks is configured")
+		}
 	}
 
 	// Validate Identity
