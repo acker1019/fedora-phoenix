@@ -103,9 +103,6 @@ func runRehydra(cmd *cobra.Command) {
 		panic("secrets.luks_password is required because infrastructure.luks is configured in the blueprint")
 	}
 
-	// Self-destruct logic
-	config.CleanupSecrets(secretsPath)
-
 	// Store artifact path
 	sess.ArtifactPath = artifactPath
 

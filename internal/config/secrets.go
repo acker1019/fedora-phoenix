@@ -1,7 +1,6 @@
 package config
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
 
@@ -42,69 +41,4 @@ func LoadSecrets(path string) (*Secrets, error) {
 	}
 
 	return &book, nil
-}
-
-// CleanupSecrets safely removes the secrets file from the disk.
-// This implements the "Self-Destruct" policy with secure overwrite.
-func CleanupSecrets(path string) {
-	log.Infof("Destroying secrets file: %s", path)
-
-	// Step 1: Overwrite file with random data before deletion
-	if err := secureOverwrite(path); err != nil {
-		log.Warnf("Failed to overwrite secrets file: %v", err)
-		// Continue to deletion even if overwrite fails
-	} else {
-		log.Info("Secrets file overwritten with random data")
-	}
-
-	// Step 2: Remove the file
-	if err := os.Remove(path); err != nil {
-		log.Warnf("Failed to delete secrets file: %v", err)
-	} else {
-		log.Info("Secrets file destroyed successfully")
-	}
-}
-
-// secureOverwrite overwrites the file with cryptographically secure random data.
-// This prevents file recovery from filesystem-level artifacts.
-func secureOverwrite(path string) (err error) {
-	// Get file size
-	info, err := os.Stat(path)
-	if err != nil {
-		return fmt.Errorf("failed to stat file: %w", err)
-	}
-
-	fileSize := info.Size()
-	if fileSize == 0 {
-		return nil // Nothing to overwrite
-	}
-
-	// Open file for writing (truncate not needed, we'll overwrite in place)
-	file, err := os.OpenFile(path, os.O_WRONLY, 0600)
-	if err != nil {
-		return fmt.Errorf("failed to open file for overwrite: %w", err)
-	}
-	defer func() {
-		if cerr := file.Close(); cerr != nil && err == nil {
-			err = fmt.Errorf("failed to close file after overwrite: %w", cerr)
-		}
-	}()
-
-	// Generate random data
-	randomData := make([]byte, fileSize)
-	if _, err := rand.Read(randomData); err != nil {
-		return fmt.Errorf("failed to generate random data: %w", err)
-	}
-
-	// Write random data to file
-	if _, err := file.Write(randomData); err != nil {
-		return fmt.Errorf("failed to write random data: %w", err)
-	}
-
-	// Sync to disk to ensure data is written
-	if err := file.Sync(); err != nil {
-		return fmt.Errorf("failed to sync file: %w", err)
-	}
-
-	return nil
 }
