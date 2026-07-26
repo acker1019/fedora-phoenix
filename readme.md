@@ -77,9 +77,13 @@ go build -o bin/tri cmd/trisolaran/trisolaran.go
 
 ### Commands
 
-#### `tri rehydra`
+#### `tri rehydra [artifact]`
 
-Start the full rehydration protocol.
+Start the full rehydration protocol. `artifact` is an optional positional argument: the path to the artifact tgz produced by `tri dehydra` (see [ADR-0008](docs/adr/adr-0008-artifact-storage-format.md)).
+
+- If given, that artifact is used (and must exist — a bad path fails loudly).
+- If omitted, rehydra looks for `trisolaran-backup.tgz` (the default `tri dehydra` output filename) next to where it's run and uses it automatically if present.
+- If neither is available, user space restore (dotfiles, SSH keys, etc.) is skipped — e.g. for a first-ever provision with no prior artifact.
 
 **Required Flags:**
 
@@ -87,28 +91,25 @@ Start the full rehydration protocol.
 
 **Optional Flags:**
 
-- `-b, --blueprint <path>`: Path to blueprint YAML file (default: `trisolaran.yml`)
-- `-a, --artifact <path>`: Path to artifact tgz produced by `tri dehydra` (see [ADR-0008](docs/adr/adr-0008-artifact-storage-format.md))
+- `-b, --blueprint <path>`: Path to blueprint YAML file (default: `trisolaran.yml`). If not explicitly passed and an artifact is used, the blueprint embedded in that artifact (see below) is used instead of the default.
 
 **Example:**
 
 ```bash
-sudo ./tri rehydra \
+sudo ./tri rehydra trisolaran-backup-20260203.tgz \
   --secrets=/path/to/secrets.yml \
-  --blueprint=trisolaran.yml \
-  --artifact=trisolaran-backup-20260203.tgz
+  --blueprint=trisolaran.yml
 ```
 
 **What it does:**
 
-1. Unlocks LUKS encrypted partition
-2. Mounts persistent data
-3. Installs system packages, ensures users/groups
-4. Restores user space from the artifact (`--artifact`)
+1. Unlocks and mounts the LUKS-encrypted partition (skipped entirely if `infrastructure.luks` isn't configured in the blueprint)
+2. Installs system packages, ensures users/groups
+3. Restores user space from the artifact
 
 #### `tri dehydra`
 
-Collect the paths configured under `userspace.dehydration.paths` in the blueprint into a single artifact.
+Collect the paths configured under `userspace.dehydration.paths` in the blueprint into a single artifact. The blueprint file itself is also embedded in the artifact (as `blueprint.yml`, alongside `filemeta.yml`), so the artifact is self-sufficient for a future `tri rehydra` even without a separate blueprint file on hand.
 
 **Optional Flags:**
 
