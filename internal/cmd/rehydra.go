@@ -232,5 +232,13 @@ func runRehydra(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Run custom scripts. Must stay last in Block IV: a script may depend
+	// on the artifact restore or repos cloned earlier in this same block.
+	if len(sess.Blueprint.UserSpace.Scripts) > 0 {
+		if err := ops.EnsureScripts(sess.Blueprint.UserSpace.Scripts, sess.Blueprint.Identity.Username); err != nil {
+			panic(err)
+		}
+	}
+
 	fmt.Println("✨ Rehydration Complete. Welcome back, Commander.")
 }

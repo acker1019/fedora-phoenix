@@ -74,6 +74,15 @@ type IdentityConfig struct {
 type UserSpaceConfig struct {
 	Dehydration DehydrationConfig `yaml:"dehydration"`
 	Repos       []RepoConfig      `yaml:"repos"`
+
+	// Scripts are one-liner shell commands run, in order, as the target
+	// user (via RunCommandAsUser), as the very last step of Block IV —
+	// after the artifact is restored and repos are cloned, since a script
+	// may depend on either (e.g. a third-party installer for something
+	// that isn't a dnf package, run in the user's own $HOME). Each entry
+	// is opaque to Trisolaran: making a given line safe to rerun is the
+	// script author's responsibility, not the engine's.
+	Scripts []string `yaml:"scripts"`
 }
 
 // DehydrationConfig defines which paths are collected into an artifact.

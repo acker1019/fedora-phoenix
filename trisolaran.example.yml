@@ -54,3 +54,9 @@ userspace:
   repos:
     - url: "git@github.com:user/project-alpha.git"
       dest: "~/Workspace/project-alpha"
+
+  # One-liner shell commands, run as the target user (not root), last in
+  # Block IV (after the artifact is restored and repos are cloned), for
+  # anything that can't just be a dnf package.
+  scripts:
+    - 'sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
