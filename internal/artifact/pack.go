@@ -23,7 +23,7 @@ var packLog = logging.WithSource("artifact/pack")
 // filemeta.yml. See ADR-0008 (Artifact Storage Format).
 //
 // If blueprintPath is non-empty, that file is copied verbatim into the
-// archive as BlueprintFileName, so a future `tri rehydra --artifact=...`
+// archive as BlueprintFileName, so a future `tri rehydra <artifact>`
 // can read the blueprint straight out of the artifact.
 //
 // Paths must already be expanded to absolute form (no "~").

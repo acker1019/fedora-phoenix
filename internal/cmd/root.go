@@ -10,7 +10,6 @@ import (
 // Global flags
 var secretsPath string
 var blueprintPath string
-var artifactPath string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -36,5 +35,4 @@ func init() {
 	// PersistentFlags 代表這個 flag 可以被所有子命令繼承
 	rootCmd.PersistentFlags().StringVarP(&secretsPath, "secrets", "s", "", "Path to the secrets YAML file (required)")
 	rootCmd.PersistentFlags().StringVarP(&blueprintPath, "blueprint", "b", "trisolaran.yml", "Path to the blueprint YAML file")
-	rootCmd.PersistentFlags().StringVarP(&artifactPath, "artifact", "a", "", "Path to artifact tgz produced by 'tri dehydra' (ADR-0008)")
 }

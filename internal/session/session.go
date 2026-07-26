@@ -26,5 +26,5 @@ type Session struct {
 	LuksMounted    bool   // Whether LUKS device is currently mounted
 
 	// Temporary Variables
-	ArtifactPath string // Path to artifact tgz (from --artifact flag)
+	ArtifactPath string // Path to artifact tgz (explicit positional arg, or auto-detected default)
 }

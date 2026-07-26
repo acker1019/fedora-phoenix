@@ -13,13 +13,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// defaultArtifactPath is the conventional filename `tri dehydra` writes to
+// when -o/--output isn't given (see dehydra.go). If rehydra isn't told
+// which artifact to use, it looks for exactly this file next to where it's
+// run, instead of silently skipping user space restore.
+const defaultArtifactPath = "trisolaran-backup.tgz"
+
 // rehydraCmd represents the rehydra command
 var rehydraCmd = &cobra.Command{
-	Use:   "rehydra",
+	Use:   "rehydra [artifact]",
 	Short: "Start the full rehydration protocol",
-	Long:  `Unlock LUKS, mount data, install packages, and restore user space from an artifact.`,
+	Long: `Unlock LUKS, mount data, install packages, and restore user space from an artifact.
+
+The artifact tgz (produced by 'tri dehydra') is given as a positional
+argument. If omitted, rehydra looks for ` + defaultArtifactPath + ` next to
+where it's run; if that isn't there either, user space restore is skipped
+(e.g. for a first-ever provision with no prior artifact).`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		runRehydra(cmd)
+		runRehydra(cmd, args)
 	},
 }
 
@@ -29,7 +41,19 @@ func init() {
 	// rehydraCmd.Flags().BoolP("dry-run", "d", false, "Preview changes only")
 }
 
-func runRehydra(cmd *cobra.Command) {
+func runRehydra(cmd *cobra.Command, args []string) {
+	// Resolve the artifact path: explicit positional arg always wins (and
+	// must exist, or Restore below fails loudly). Otherwise, auto-detect
+	// defaultArtifactPath next to where the command runs; if it's not
+	// there, artifactPath stays "" and user space restore is skipped.
+	var artifactPath string
+	artifactExplicit := len(args) > 0
+	if artifactExplicit {
+		artifactPath = args[0]
+	} else if _, err := os.Stat(defaultArtifactPath); err == nil {
+		artifactPath = defaultArtifactPath
+	}
+
 	// 1. Validate Flags
 	if secretsPath == "" {
 		fmt.Println("❌ Error: --secrets flag is required.")
@@ -196,6 +220,8 @@ func runRehydra(cmd *cobra.Command) {
 		if err := artifact.Restore(sess.ArtifactPath); err != nil {
 			panic(err)
 		}
+	} else {
+		fmt.Printf("⚠️  No artifact given and %q not found, skipping user space restore (dotfiles/SSH keys/etc. will NOT be restored)\n", defaultArtifactPath)
 	}
 
 	// Clone Git Repositories
