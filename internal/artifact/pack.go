@@ -22,8 +22,12 @@ var packLog = logging.WithSource("artifact/pack")
 // its permission metadata (mode, owner, group, hash) is recorded in
 // filemeta.yml. See ADR-0008 (Artifact Storage Format).
 //
+// If blueprintPath is non-empty, that file is copied verbatim into the
+// archive as BlueprintFileName, so a future `tri rehydra --artifact=...`
+// can read the blueprint straight out of the artifact.
+//
 // Paths must already be expanded to absolute form (no "~").
-func Pack(paths []string, outputPath string) error {
+func Pack(paths []string, blueprintPath, outputPath string) error {
 	if len(paths) == 0 {
 		return fmt.Errorf("no paths to pack")
 	}
@@ -60,6 +64,16 @@ func Pack(paths []string, outputPath string) error {
 
 	if err := SaveManifest(filepath.Join(root, ManifestFileName), manifest); err != nil {
 		return err
+	}
+
+	if blueprintPath != "" {
+		data, err := os.ReadFile(blueprintPath)
+		if err != nil {
+			return fmt.Errorf("failed to read blueprint for embedding: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(root, BlueprintFileName), data, 0644); err != nil {
+			return fmt.Errorf("failed to embed blueprint: %w", err)
+		}
 	}
 
 	if err := createTarGz(stageDir, protectName, outputPath); err != nil {

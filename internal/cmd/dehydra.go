@@ -50,7 +50,7 @@ func runDehydra() {
 	}
 
 	fmt.Printf("🍂 Dehydrating %d paths...\n", len(paths))
-	if err := artifact.Pack(paths, dehydraOutput); err != nil {
+	if err := artifact.Pack(paths, blueprintPath, dehydraOutput); err != nil {
 		panic(fmt.Sprintf("Failed to pack artifact: %v", err))
 	}
 

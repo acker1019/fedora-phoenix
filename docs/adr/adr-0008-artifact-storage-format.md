@@ -42,6 +42,7 @@ tgz 解壓後有一層保護資料夾，命名格式為 `phoenix-backup-<YYYYMMD
 phoenix-backup-20260203.tgz
 └── phoenix-backup-20260203/      ← 保護層（含日期）
     ├── filemeta.yml              ← 權限與擁有者資訊（Metadata）
+    ├── blueprint.yml             ← 打包當下使用的 blueprint 原檔（可選，見下方說明）
     └── fs/                       ← 檔案系統鏡像（內容）
         ├── home/
         │   └── <username>/
@@ -115,6 +116,16 @@ entries:
 - 只記錄 owner/group **名稱**，不記錄 UID/GID
 - UID/GID 應在 provision 時透過系統指令建立後由程式從 OS 讀回
 - 不應 hardcoding 在任何檔案裡面
+
+---
+
+### 3a. blueprint.yml：自帶還原配方
+
+**設計理念**：`blueprint.yml` 是選配的，放在保護層根目錄（與 `filemeta.yml` 同層，不進 `fs/`），內容是打包當下所使用的 blueprint 原檔的逐字複製。
+
+**目的**：讓單一 artifact tgz 具備「自我描述」能力——還原時若沒有明確指定要用哪份 blueprint，可以直接從 archive 裡讀出這份內建版本，不需要事先另外準備一份 blueprint 檔案。固定的檔案位置本身就是協議的一部分，讀取時不需要預先知道 blueprint 的內容才能找到它。
+
+**優先順序**：明確指定的 blueprint 來源永遠優先於 artifact 內建版本；內建版本只在沒有明確指定時才會被採用。
 
 ---
 

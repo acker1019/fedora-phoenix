@@ -19,7 +19,7 @@ var rehydraCmd = &cobra.Command{
 	Short: "Start the full rehydration protocol",
 	Long:  `Unlock LUKS, mount data, install packages, and restore user space from an artifact.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runRehydra()
+		runRehydra(cmd)
 	},
 }
 
@@ -29,7 +29,7 @@ func init() {
 	// rehydraCmd.Flags().BoolP("dry-run", "d", false, "Preview changes only")
 }
 
-func runRehydra() {
+func runRehydra(cmd *cobra.Command) {
 	// 1. Validate Flags
 	if secretsPath == "" {
 		fmt.Println("❌ Error: --secrets flag is required.")
@@ -69,10 +69,27 @@ func runRehydra() {
 	// ============================================================================
 	fmt.Println("🔑 Step 1/5: Loading configuration...")
 
-	// Load Blueprint (trisolaran.yml)
-	sess.Blueprint, err = config.LoadBlueprint(blueprintPath)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to load blueprint: %v", err))
+	// Load Blueprint. If --blueprint was not explicitly passed but an
+	// artifact was given, prefer the blueprint embedded in that artifact
+	// (see artifact.ExtractBlueprint) over the --blueprint default, so a
+	// single artifact tgz can be self-sufficient for rehydration.
+	sess.Blueprint = nil
+	if !cmd.Flags().Changed("blueprint") && artifactPath != "" {
+		if data, embedErr := artifact.ExtractBlueprint(artifactPath); embedErr == nil {
+			sess.Blueprint, err = config.ParseBlueprint(data)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to parse blueprint embedded in artifact: %v", err))
+			}
+			fmt.Println("📦 Using blueprint embedded in artifact (no --blueprint given)")
+		} else if embedErr != artifact.ErrBlueprintNotEmbedded {
+			panic(fmt.Sprintf("Failed to read artifact: %v", embedErr))
+		}
+	}
+	if sess.Blueprint == nil {
+		sess.Blueprint, err = config.LoadBlueprint(blueprintPath)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to load blueprint: %v", err))
+		}
 	}
 
 	// Load Secrets

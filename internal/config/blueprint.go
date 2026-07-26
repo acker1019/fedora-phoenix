@@ -103,18 +103,28 @@ func LoadBlueprint(path string) (*Blueprint, error) {
 		return nil, fmt.Errorf("failed to read blueprint file: %w", err)
 	}
 
-	// 3. Parse YAML
+	bp, err := ParseBlueprint(data)
+	if err != nil {
+		return nil, err
+	}
+
+	blueprintLog.Info("Blueprint loaded successfully")
+	return bp, nil
+}
+
+// ParseBlueprint parses and validates blueprint YAML content regardless of
+// where it came from — a file on disk, or one embedded in an artifact tgz
+// (see artifact.ExtractBlueprint).
+func ParseBlueprint(data []byte) (*Blueprint, error) {
 	var bp Blueprint
 	if err := yaml.Unmarshal(data, &bp); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML structure: %w", err)
 	}
 
-	// 4. Validate required fields
 	if err := validateBlueprint(&bp); err != nil {
 		return nil, fmt.Errorf("invalid blueprint: %w", err)
 	}
 
-	blueprintLog.Info("Blueprint loaded successfully")
 	return &bp, nil
 }
 
