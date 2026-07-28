@@ -106,6 +106,18 @@ Never proactively ask or suggest whether to commit. Only take any commit-related
 
 When the user does ask for a commit, there are two scenarios:
 
+### Message Format
+
+Every commit message's first line must start with a lowercase bracketed tag, followed by a lowercase imperative-mood summary (no trailing period):
+
+```
+[tag] short imperative summary
+```
+
+Tags in use (pick the one matching the change; check `git log --oneline` if unsure): `feat`, `fix`, `doc`, `chore`, `refactor`.
+
+Example: `[feat] add system.pkg_repos for packages needing a third-party repo first`
+
 ### Scenario A: User already staged files
 
 Trigger: user says something like "commit the staged files" — they ran `git add` themselves first.
@@ -181,4 +193,4 @@ Before completing documentation work:
 
 ---
 
-**Last Updated:** 2026-07-25 (commit workflow added)
+**Last Updated:** 2026-07-28 (commit message tag format added)
