@@ -16,6 +16,12 @@ var versionCmd = &cobra.Command{
 		dirty := false
 
 		if info, ok := debug.ReadBuildInfo(); ok {
+			// Go's own pseudo-version for the main module, derived from git
+			// commit time/hash (e.g. v0.0.0-20260728141757-64e726626355).
+			if info.Main.Version != "" && info.Main.Version != "(devel)" {
+				version = info.Main.Version
+			}
+
 			// Try to get version from VCS info
 			for _, setting := range info.Settings {
 				switch setting.Key {
