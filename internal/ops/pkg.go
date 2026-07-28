@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/acker1019/fedora-trisolaran/internal/config"
 	"github.com/acker1019/fedora-trisolaran/internal/logging"
 )
 
@@ -55,6 +56,125 @@ func EnsurePackages(pkgs []string) error {
 
 	pkgLog.Info("Packages installed successfully")
 	return nil
+}
+
+// EnsurePkgRepos ensures each declared dnf repo matches its desired state.
+// Follows the same Check-Diff-Act pattern as EnsurePackages: a repo file
+// that doesn't exist yet is created (importing its GPG key first, if
+// given); a repo file that already exists only has its enabled flag
+// reconciled. See config.PkgRepoConfig.
+func EnsurePkgRepos(repos []config.PkgRepoConfig) error {
+	for _, repo := range repos {
+		if err := ensurePkgRepo(repo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func pkgRepoPath(id string) string {
+	return fmt.Sprintf("/etc/yum.repos.d/%s.repo", id)
+}
+
+func ensurePkgRepo(repo config.PkgRepoConfig) error {
+	pkgLog.Infof("Checking dnf repo: %s", repo.ID)
+
+	repoPath := pkgRepoPath(repo.ID)
+	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
+		if repo.BaseURL == "" {
+			return fmt.Errorf("dnf repo %s not found at %s and no baseurl given to create it", repo.ID, repoPath)
+		}
+		return createPkgRepo(repo, repoPath)
+	}
+
+	currentlyEnabled, err := isPkgRepoEnabled(repo.ID, repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to read enabled state for repo %s: %w", repo.ID, err)
+	}
+
+	if currentlyEnabled == repo.Enabled {
+		pkgLog.Infof("Repo %s already in desired state. Skipping.", repo.ID)
+		return nil
+	}
+
+	setFlag := "--set-disabled"
+	if repo.Enabled {
+		setFlag = "--set-enabled"
+	}
+
+	pkgLog.Infof("Setting repo %s: enabled=%v", repo.ID, repo.Enabled)
+	cmd := exec.Command("dnf", "config-manager", setFlag, repo.ID)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to set enabled state for repo %s: %w", repo.ID, err)
+	}
+
+	return nil
+}
+
+func createPkgRepo(repo config.PkgRepoConfig, repoPath string) error {
+	if repo.GPGKey != "" {
+		pkgLog.Infof("Importing GPG key for repo %s", repo.ID)
+		if err := exec.Command("rpm", "--import", repo.GPGKey).Run(); err != nil {
+			return fmt.Errorf("failed to import gpg key for repo %s: %w", repo.ID, err)
+		}
+	}
+
+	enabled := "0"
+	if repo.Enabled {
+		enabled = "1"
+	}
+	gpgcheck := "0"
+	if repo.GPGKey != "" {
+		gpgcheck = "1"
+	}
+
+	var content strings.Builder
+	fmt.Fprintf(&content, "[%s]\n", repo.ID)
+	fmt.Fprintf(&content, "name=%s\n", repo.ID)
+	fmt.Fprintf(&content, "baseurl=%s\n", repo.BaseURL)
+	fmt.Fprintf(&content, "enabled=%s\n", enabled)
+	fmt.Fprintf(&content, "gpgcheck=%s\n", gpgcheck)
+	if repo.GPGKey != "" {
+		fmt.Fprintf(&content, "gpgkey=%s\n", repo.GPGKey)
+	}
+
+	pkgLog.Infof("Creating dnf repo file: %s", repoPath)
+	if err := os.WriteFile(repoPath, []byte(content.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write repo file for %s: %w", repo.ID, err)
+	}
+
+	pkgLog.Infof("Repo %s created successfully", repo.ID)
+	return nil
+}
+
+// isPkgRepoEnabled reads the current enabled= value for repo.ID's section
+// within its .repo file. Assumes the file's section header matches the
+// repo id, which holds for the common case of one repo per file (true for
+// both dnf-managed third-party repos like Fedora's google-chrome.repo and
+// files this function itself creates).
+func isPkgRepoEnabled(id, repoPath string) (bool, error) {
+	data, err := os.ReadFile(repoPath)
+	if err != nil {
+		return false, err
+	}
+
+	inSection := false
+	sectionHeader := fmt.Sprintf("[%s]", id)
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			inSection = line == sectionHeader
+			continue
+		}
+		if inSection && strings.HasPrefix(line, "enabled") {
+			return strings.HasSuffix(line, "=1"), nil
+		}
+	}
+
+	// No explicit enabled= line means dnf's own default of enabled.
+	return true, nil
 }
 
 // EnsurePinnedPackages installs and locks specific package versions.

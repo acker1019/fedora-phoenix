@@ -110,6 +110,23 @@ func MountDevice(mapperName, mountPoint string)
 
 負責作業系統層級的設定。以 **Root** 身份執行。
 
+### 4a. EnsurePkgRepos
+
+```go
+func EnsurePkgRepos(repos []config.PkgRepoConfig) error
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | 確保 `system.pkg_repos` 宣告的 repo 處於期望狀態，讓 `EnsurePackages` 能從非預設來源（如 VS Code、Chrome）安裝套件 |
+| **Idempotency** | Repo 檔不存在 → 建立（並視需要 `rpm --import` gpgkey）；已存在 → 只比對並調整 `enabled=` 狀態 |
+| **Command** | `rpm --import <gpgkey>`（建立時）、`dnf config-manager --set-enabled/--set-disabled <id>`（調整既有 repo） |
+| **Location** | `internal/ops/pkg.go` |
+| **Note** | 兩種情境共用同一個 struct：只給 `id`（+ `enabled`）代表既有 repo 只需翻轉開關；給 `baseurl`（+ 選填 `gpgkey`）代表 repo 檔不存在、需要建立 |
+| **Status** | ✅ Implemented |
+
+---
+
 ### 5. EnsurePackages
 
 ```go
@@ -344,6 +361,7 @@ func EnsureScripts(scripts []string, username string) error
 | **I** | LoadSecrets | ✅ Implemented | `internal/config/secrets.go` |
 | **II** | UnlockLuks | ✅ Implemented | `internal/ops/luks.go` |
 | **II** | MountDevice | ✅ Implemented | `internal/ops/luks.go` |
+| **III** | EnsurePkgRepos | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePinnedPackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsureServices | ✅ Implemented | `internal/ops/systemd.go` |

@@ -42,11 +42,27 @@ type LuksConfig struct {
 
 // SystemConfig defines OS-level state
 type SystemConfig struct {
-	Packages       []string      `yaml:"packages"`
-	PinnedPackages []string      `yaml:"pinned_packages"`
-	Services       []string      `yaml:"services"`
-	Users          []UserConfig  `yaml:"users"`
-	Groups         []GroupConfig `yaml:"groups"`
+	Pkgs           []string        `yaml:"pkgs"`
+	PinnedPackages []string        `yaml:"pinned_packages"`
+	PkgRepos       []PkgRepoConfig `yaml:"pkg_repos"`
+	Services       []string        `yaml:"services"`
+	Users          []UserConfig    `yaml:"users"`
+	Groups         []GroupConfig   `yaml:"groups"`
+}
+
+// PkgRepoConfig declares the desired state of a single dnf repo, so
+// packages that live outside Fedora's default repos (e.g. VS Code, Chrome)
+// can be ensured before System.Pkgs installs them. Two shapes:
+//   - id only: an already-shipped repo (e.g. Fedora's google-chrome.repo,
+//     provided by fedora-workstation-repositories) whose `enabled=` flag
+//     just needs flipping.
+//   - id + baseurl: a repo file that doesn't exist yet and must be created
+//     (GPGKey, if set, is imported via rpm --import).
+type PkgRepoConfig struct {
+	ID      string `yaml:"id"`
+	BaseURL string `yaml:"baseurl,omitempty"`
+	GPGKey  string `yaml:"gpgkey,omitempty"`
+	Enabled bool   `yaml:"enabled"`
 }
 
 // UserConfig defines a user account to ensure exists.

@@ -182,9 +182,16 @@ func runRehydra(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Ensure Pkg Repos (before Pkgs, since packages may come from them)
+	if len(sess.Blueprint.System.PkgRepos) > 0 {
+		if err := ops.EnsurePkgRepos(sess.Blueprint.System.PkgRepos); err != nil {
+			panic(err)
+		}
+	}
+
 	// Install Packages
-	if len(sess.Blueprint.System.Packages) > 0 {
-		if err := ops.EnsurePackages(sess.Blueprint.System.Packages); err != nil {
+	if len(sess.Blueprint.System.Pkgs) > 0 {
+		if err := ops.EnsurePackages(sess.Blueprint.System.Pkgs); err != nil {
 			panic(err)
 		}
 	}

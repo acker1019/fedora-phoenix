@@ -14,11 +14,26 @@ infrastructure:
 
 # System: OS-level packages and services
 system:
-  packages:
+  # Repos needed before `pkgs` can install from them. Two shapes:
+  # - id only: an already-shipped repo (e.g. Fedora's google-chrome.repo)
+  #   whose enabled= flag just needs flipping on.
+  # - id + baseurl: a repo file that doesn't exist yet and must be created
+  #   (gpgkey, if set, is imported via rpm --import).
+  pkg_repos:
+    - id: google-chrome-stable
+      enabled: true
+
+    - id: vscode
+      baseurl: "https://packages.microsoft.com/yumrepos/vscode"
+      gpgkey: "https://packages.microsoft.com/keys/microsoft.asc"
+      enabled: true
+
+  pkgs:
     - git
     - zsh
     - docker
     - fprintd
+
   pinned_packages: []
   services: []
 
