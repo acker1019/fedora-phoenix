@@ -111,7 +111,24 @@ func MountDevice(mapperName, mountPoint string)
 
 負責作業系統層級的設定。以 **Root** 身份執行。
 
-### 4a. EnsurePkgRepos
+### 4a. EnsureSystemUpdate
+
+```go
+func EnsureSystemUpdate() error
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | Block III 的第一件事：把所有已安裝套件更新到最新 |
+| **Idempotency** | 無獨立 check 步驟——直接呼叫 `dnf update`，系統已是最新時 dnf 本身就回報無事可做 |
+| **Command** | `dnf update -y --refresh` |
+| **Location** | `internal/ops/pkg.go` |
+| **Optionality** | 預設開啟；`system.skip_update: true` 可跳過 |
+| **Status** | ✅ Implemented |
+
+---
+
+### 4b. EnsurePkgRepos
 
 ```go
 func EnsurePkgRepos(repos []config.PkgRepoConfig) error
@@ -178,6 +195,22 @@ func EnsureServices(services []string)
 | **Responsibility** | 啟動 Systemd 服務 |
 | **Command** | `systemctl enable --now <service>` |
 | **Location** | `internal/ops/systemd.go` |
+
+---
+
+### 7a. EnsureTmpfiles
+
+```go
+func EnsureTmpfiles(paths []string, userHome string) error
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | 宣告 `system.tmpfiles` 裡的路徑，透過 systemd-tmpfiles 在每次開機時移除（例如上次非正常關機留下的 app lock 檔） |
+| **Idempotency** | 比對 `/etc/tmpfiles.d/trisolaran.conf` 現有內容跟期望內容是否相同，不同才寫入 |
+| **Command** | 寫入 `/etc/tmpfiles.d/trisolaran.conf`，每行 `r <展開後路徑>`；不需要自訂 systemd unit，因為 `systemd-tmpfiles-setup.service` 本來就內建、每次開機都會執行 |
+| **Location** | `internal/ops/tmpfiles.go` |
+| **Status** | ✅ Implemented |
 
 ---
 
@@ -362,10 +395,12 @@ func EnsureScripts(scripts []string, username string) error
 | **I** | LoadSecrets | ✅ Implemented | `internal/config/secrets.go` |
 | **II** | UnlockLuks | ✅ Implemented | `internal/ops/luks.go` |
 | **II** | MountDevice | ✅ Implemented | `internal/ops/luks.go` |
+| **III** | EnsureSystemUpdate | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePkgRepos | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePinnedPackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsureServices | ✅ Implemented | `internal/ops/systemd.go` |
+| **III** | EnsureTmpfiles | ✅ Implemented | `internal/ops/tmpfiles.go` |
 | **III** | EnsureUserShell | ✅ Implemented | `internal/ops/user.go` |
 | **III** | EnsureGroups / EnsureUsers | ✅ Implemented | `internal/ops/account.go` |
 | **IV** | RunCommandAsUser | ✅ Implemented | `internal/utils/exec.go` |

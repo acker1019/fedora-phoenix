@@ -39,9 +39,18 @@ system:
     - zsh
     - docker
     - fprintd
+    - google-chrome-stable
+    - code
 
   pinned_packages: []
   services: []
+
+  # Paths removed on every boot via systemd-tmpfiles (systemd's own
+  # systemd-tmpfiles-setup.service, already enabled by default -- no
+  # custom unit needed). Useful for a stale app lock file left behind by
+  # an unclean shutdown.
+  tmpfiles:
+    - "~/.config/google-chrome/SingletonLock"
 
   # Users and groups (name only, no ID)
   users:

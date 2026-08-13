@@ -43,12 +43,19 @@ type LuksConfig struct {
 
 // SystemConfig defines OS-level state
 type SystemConfig struct {
+	SkipUpdate     bool            `yaml:"skip_update"`
 	Pkgs           []string        `yaml:"pkgs"`
 	PinnedPackages []string        `yaml:"pinned_packages"`
 	PkgRepos       []PkgRepoConfig `yaml:"pkg_repos"`
 	Services       []string        `yaml:"services"`
-	Users          []UserConfig    `yaml:"users"`
-	Groups         []GroupConfig   `yaml:"groups"`
+	// Tmpfiles are paths (may use "~", expanded against the target user's
+	// home) removed on every boot via systemd-tmpfiles -- e.g. a stale app
+	// lock file left behind by an unclean shutdown. Declarative: no custom
+	// systemd unit needed, since systemd-tmpfiles-setup.service already
+	// ships enabled on any systemd system.
+	Tmpfiles []string      `yaml:"tmpfiles"`
+	Users    []UserConfig  `yaml:"users"`
+	Groups   []GroupConfig `yaml:"groups"`
 }
 
 // PkgRepoConfig declares the desired state of a single dnf repo, so

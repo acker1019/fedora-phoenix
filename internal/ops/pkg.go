@@ -12,6 +12,24 @@ import (
 
 var pkgLog = logging.WithSource("ops/pkg")
 
+// EnsureSystemUpdate brings all currently-installed packages up to date.
+// Unconditional by design: dnf itself is idempotent here (a fully-updated
+// system just reports nothing to do), so there's no separate check step.
+func EnsureSystemUpdate() error {
+	pkgLog.Info("Updating all installed packages...")
+
+	cmd := exec.Command("dnf", "update", "-y", "--refresh")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("dnf update failed: %w", err)
+	}
+
+	pkgLog.Info("System update complete")
+	return nil
+}
+
 // EnsurePackages is the idempotent function to install packages.
 // It filters out already installed packages using rpm -q for speed.
 func EnsurePackages(pkgs []string) error {

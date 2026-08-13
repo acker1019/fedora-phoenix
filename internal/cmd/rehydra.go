@@ -168,6 +168,15 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	// ============================================================================
 	fmt.Println("📦 Step 3/5: Configuring system state...")
 
+	// Update all installed packages first, before anything else in this
+	// block touches package state. Opt-out via system.skip_update; on by
+	// default.
+	if !sess.Blueprint.System.SkipUpdate {
+		if err := ops.EnsureSystemUpdate(); err != nil {
+			panic(err)
+		}
+	}
+
 	// Ensure Groups (before Users, since users may reference them)
 	if len(sess.Blueprint.System.Groups) > 0 {
 		if err := ops.EnsureGroups(sess.Blueprint.System.Groups); err != nil {
@@ -206,6 +215,13 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	// Enable Services
 	if len(sess.Blueprint.System.Services) > 0 {
 		if err := ops.EnsureServices(sess.Blueprint.System.Services); err != nil {
+			panic(err)
+		}
+	}
+
+	// Declare boot-time tmpfiles cleanup (e.g. stale app lock files)
+	if len(sess.Blueprint.System.Tmpfiles) > 0 {
+		if err := ops.EnsureTmpfiles(sess.Blueprint.System.Tmpfiles, sess.UserHome); err != nil {
 			panic(err)
 		}
 	}
