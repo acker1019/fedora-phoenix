@@ -25,7 +25,8 @@ func LoadBlueprint(path string) (*config.Blueprint, error)
 | 屬性 | 說明 |
 |------|------|
 | **Responsibility** | 讀取公開的 `trisolaran.yml`，定義系統還原的藍圖 |
-| **Logic** | File Read → YAML Unmarshal → Validate Fields |
+| **Logic** | File Read → YAML Unmarshal (strict: `KnownFields(true)`) → Validate Fields |
+| **Note** | Strict decoding 會拒絕未知欄位，避免 schema 改名（例如 `packages` → `pkgs`）後，舊檔案裡的欄位被靜默忽略、卻不報錯 |
 | **Location** | `internal/config/blueprint.go` |
 | **Status** | ✅ Implemented |
 

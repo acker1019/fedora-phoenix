@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -142,7 +143,14 @@ func LoadBlueprint(path string) (*Blueprint, error) {
 // (see artifact.ExtractBlueprint).
 func ParseBlueprint(data []byte) (*Blueprint, error) {
 	var bp Blueprint
-	if err := yaml.Unmarshal(data, &bp); err != nil {
+
+	// KnownFields rejects unrecognized keys instead of silently dropping
+	// them. Without this, a stale field left over from a schema rename
+	// (e.g. system.packages -> system.pkgs) parses successfully but the
+	// new field just never gets set, with no error anywhere.
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&bp); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML structure: %w", err)
 	}
 
