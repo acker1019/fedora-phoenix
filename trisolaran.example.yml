@@ -106,6 +106,8 @@ userspace:
   # safe to rerun (like the guard below) is on you -- one that errors out
   # on a second run will abort the whole rehydra.
   pipeline:
-    - script: '[ -d "$HOME/.oh-my-zsh" ] || sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+    - script: >-
+        [ -d "$HOME/.oh-my-zsh" ] ||
+        sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
     - run: dehydration
     - run: repos
