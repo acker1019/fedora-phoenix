@@ -121,7 +121,7 @@ func EnsurePkgRepos(repos []config.PkgRepoConfig) error
 |------|------|
 | **Responsibility** | 確保 `system.pkg_repos` 宣告的 repo 處於期望狀態，讓 `EnsurePackages` 能從非預設來源（如 VS Code、Chrome）安裝套件 |
 | **Idempotency** | Repo 檔不存在 → 建立（並視需要 `rpm --import` gpgkey）；已存在 → 只比對並調整 `enabled=` 狀態 |
-| **Command** | `rpm --import <gpgkey>`（建立時）、`dnf config-manager --set-enabled/--set-disabled <id>`（調整既有 repo） |
+| **Command** | `rpm --import <gpgkey>`（建立時）；調整既有 repo 的 `enabled=` 則直接改寫 `.repo` 檔本身，不呼叫 `dnf config-manager`（dnf4 的 `--set-enabled`/`--set-disabled` 語法在 dnf5 上不存在） |
 | **Location** | `internal/ops/pkg.go` |
 | **Note** | 兩種情境共用同一個 struct：只給 `id`（+ `enabled`）代表既有 repo 只需翻轉開關；給 `baseurl`（+ 選填 `gpgkey`）代表 repo 檔不存在、需要建立 |
 | **Status** | ✅ Implemented |

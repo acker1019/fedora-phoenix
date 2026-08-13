@@ -97,20 +97,66 @@ func ensurePkgRepo(repo config.PkgRepoConfig) error {
 		return nil
 	}
 
-	setFlag := "--set-disabled"
-	if repo.Enabled {
-		setFlag = "--set-enabled"
-	}
-
 	pkgLog.Infof("Setting repo %s: enabled=%v", repo.ID, repo.Enabled)
-	cmd := exec.Command("dnf", "config-manager", setFlag, repo.ID)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := setPkgRepoEnabled(repo.ID, repoPath, repo.Enabled); err != nil {
 		return fmt.Errorf("failed to set enabled state for repo %s: %w", repo.ID, err)
 	}
 
 	return nil
+}
+
+// setPkgRepoEnabled rewrites the enabled= line for repo.ID's section
+// within its .repo file directly, rather than shelling out to `dnf
+// config-manager --set-enabled/--set-disabled` -- that flag pair is
+// dnf4-only and dnf5's config-manager plugin rejects it outright, so
+// editing the file ourselves avoids depending on either CLI's syntax.
+func setPkgRepoEnabled(id, repoPath string, enabled bool) error {
+	data, err := os.ReadFile(repoPath)
+	if err != nil {
+		return err
+	}
+
+	desired := "enabled=0"
+	if enabled {
+		desired = "enabled=1"
+	}
+
+	sectionHeader := fmt.Sprintf("[%s]", id)
+	lines := strings.Split(string(data), "\n")
+	out := make([]string, 0, len(lines)+1)
+	inSection := false
+	found := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		isHeader := strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")
+
+		if inSection && !found && isHeader {
+			// Leaving the target section without an enabled= line seen: insert one.
+			out = append(out, desired)
+			found = true
+		}
+
+		if isHeader {
+			inSection = trimmed == sectionHeader
+			out = append(out, line)
+			continue
+		}
+
+		if inSection && strings.HasPrefix(trimmed, "enabled") {
+			out = append(out, desired)
+			found = true
+			continue
+		}
+
+		out = append(out, line)
+	}
+
+	if inSection && !found {
+		out = append(out, desired)
+	}
+
+	return os.WriteFile(repoPath, []byte(strings.Join(out, "\n")), 0644)
 }
 
 func createPkgRepo(repo config.PkgRepoConfig, repoPath string) error {

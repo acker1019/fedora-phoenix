@@ -15,12 +15,18 @@ infrastructure:
 # System: OS-level packages and services
 system:
   # Repos needed before `pkgs` can install from them. Two shapes:
-  # - id only: an already-shipped repo (e.g. Fedora's google-chrome.repo)
-  #   whose enabled= flag just needs flipping on.
+  # - id only: an already-shipped repo (e.g. one from a repo package
+  #   already in `pkgs` below) whose enabled= flag just needs flipping on.
+  #   Don't rely on this for repos you haven't confirmed ship pre-added on
+  #   a base install (e.g. google-chrome.repo requires the
+  #   fedora-workstation-repositories package first, and isn't present at
+  #   all on some installs) -- use the baseurl shape instead if unsure.
   # - id + baseurl: a repo file that doesn't exist yet and must be created
   #   (gpgkey, if set, is imported via rpm --import).
   pkg_repos:
-    - id: google-chrome-stable
+    - id: google-chrome
+      baseurl: "https://dl.google.com/linux/chrome/rpm/stable/x86_64"
+      gpgkey: "https://dl.google.com/linux/linux_signing_key.pub"
       enabled: true
 
     - id: vscode
