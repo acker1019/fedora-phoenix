@@ -99,6 +99,19 @@ type UserSpaceConfig struct {
 	Dehydration DehydrationConfig `yaml:"dehydration"`
 	Repos       []RepoConfig      `yaml:"repos"`
 
+	// VSCodeExtensions are extension IDs (as printed by `code
+	// --list-extensions`) ensured installed via `code --install-extension`
+	// when a RunVSCodeExtensions step runs. Not restored from the
+	// dehydration path: like other network-reinstallable tools,
+	// extensions are declared here and fetched fresh each time.
+	VSCodeExtensions []string `yaml:"vscode_extensions"`
+
+	// Flatpaks are Flathub app IDs (e.g. "md.obsidian.Obsidian") ensured
+	// installed, user-scope (no root, unlike Snap which needs a
+	// system-level /snap symlink on Fedora), when a RunFlatpaks step
+	// runs. The Flathub remote itself is added as part of the same step.
+	Flatpaks []string `yaml:"flatpaks"`
+
 	// Pipeline is the ordered sequence of Block IV steps, run as the
 	// target user. By default (no step in Pipeline has a Run of
 	// RunDehydration or RunRepos), restoring the artifact and cloning
@@ -115,6 +128,9 @@ type UserSpaceConfig struct {
 	// it triggers (RunDehydration -> the Dehydration section above,
 	// RunRepos -> the Repos section above) rather than a separate
 	// "restore_x" verb, so there's only one name per concept to remember.
+	// RunVSCodeExtensions and RunFlatpaks have no such default-run
+	// behavior (nothing implicitly needs them), so a step for either only
+	// runs where you place one.
 	//
 	// Script entries are opaque to Trisolaran: making a given line safe
 	// to rerun is the script author's responsibility, not the engine's.
@@ -123,14 +139,24 @@ type UserSpaceConfig struct {
 
 // Known values for PipelineStep.Run.
 const (
-	RunDehydration = "dehydration"
-	RunRepos       = "repos"
+	RunDehydration      = "dehydration"
+	RunRepos            = "repos"
+	RunVSCodeExtensions = "vscode_extensions"
+	RunFlatpaks         = "flatpaks"
 )
 
+var knownRunValues = map[string]bool{
+	RunDehydration:      true,
+	RunRepos:            true,
+	RunVSCodeExtensions: true,
+	RunFlatpaks:         true,
+}
+
 // PipelineStep is exactly one of: a custom one-liner (Script), or a named
-// built-in action (Run -- one of RunDehydration, RunRepos). Run is a
-// keyword, not a bool, so future built-in actions can be added as new
-// valid values without growing the struct every time.
+// built-in action (Run -- one of RunDehydration, RunRepos,
+// RunVSCodeExtensions). Run is a keyword, not a bool, so future built-in
+// actions can be added as new valid values without growing the struct
+// every time.
 type PipelineStep struct {
 	Script string `yaml:"script,omitempty"`
 	Run    string `yaml:"run,omitempty"`
@@ -242,8 +268,8 @@ func validateBlueprint(bp *Blueprint) error {
 		if set != 1 {
 			return fmt.Errorf("userspace.pipeline[%d] must set exactly one of script or run", i)
 		}
-		if step.Run != "" && step.Run != RunDehydration && step.Run != RunRepos {
-			return fmt.Errorf("userspace.pipeline[%d]: unknown run value %q (expected %q or %q)", i, step.Run, RunDehydration, RunRepos)
+		if step.Run != "" && !knownRunValues[step.Run] {
+			return fmt.Errorf("userspace.pipeline[%d]: unknown run value %q", i, step.Run)
 		}
 	}
 

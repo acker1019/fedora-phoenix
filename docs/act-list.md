@@ -377,13 +377,13 @@ func EnsureScripts(scripts []string, username string) error
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | Block IV 依序執行 `userspace.pipeline` 定義的 step。每個 step 是 `script`（單行 shell，透過 `EnsureScripts` 執行）或 `run`（`dehydration`/`repos`，觸發 artifact 還原 / repo clone） |
+| **Responsibility** | Block IV 依序執行 `userspace.pipeline` 定義的 step。每個 step 是 `script`（單行 shell，透過 `EnsureScripts` 執行）或 `run`（`dehydration`/`repos`/`vscode_extensions`/`flatpaks`，觸發 artifact 還原、repo clone、VS Code extension 安裝、或 Flatpak app 安裝） |
 | **Execution** | `script` step via `RunCommandAsUser`，在目標使用者自己的 `$HOME` 下執行，不是 root |
-| **Ordering** | **預設**：沒有任何 step 明確寫 `run: dehydration`/`run: repos` 時，artifact 還原跟 repo clone 會自動排在所有 `script` 之前執行（維持原本「還原、clone、腳本最後」的行為）。**明確控制**：只要 pipeline 裡有任何一個 step 寫了 `run: dehydration`/`run: repos`，該動作就改成照你排的順序執行，讓你可以把 script 插在還原/clone 前後（例如 oh-my-zsh 安裝程式會無條件覆蓋 `.zshrc`，必須排在 `run: dehydration` **之前**，不然會蓋掉剛還原回去的 `.zshrc`） |
-| **Idempotency** | `script` 沒有通用的 Check-Diff 機制——每行指令對 Trisolaran 而言是不透明的，重跑是否安全由撰寫該行的人自己負責 |
-| **Command** | `sh -c <script>`（`script` step）；`run` step 沒有 shell 指令，直接呼叫對應的 Go 函式 |
-| **Validation** | 每個 step 必須恰好設定 `script` 或 `run` 其中一個；`run` 值必須是已知關鍵字（目前是 `dehydration`、`repos`） |
-| **Location** | `internal/ops/script.go`（`script` step 執行）、`internal/cmd/rehydra.go`（pipeline 調度邏輯） |
+| **Ordering** | **預設**：沒有任何 step 明確寫 `run: dehydration`/`run: repos` 時，artifact 還原跟 repo clone 會自動排在所有 `script` 之前執行（維持原本「還原、clone、腳本最後」的行為）。**明確控制**：只要 pipeline 裡有任何一個 step 寫了 `run: dehydration`/`run: repos`，該動作就改成照你排的順序執行，讓你可以把 script 插在還原/clone 前後（例如 oh-my-zsh 安裝程式會無條件覆蓋 `.zshrc`，必須排在 `run: dehydration` **之前**，不然會蓋掉剛還原回去的 `.zshrc`）。`run: vscode_extensions`/`run: flatpaks` 沒有這種預設行為——不寫就不會執行，因為沒有舊行為需要相容 |
+| **Idempotency** | `script` 沒有通用的 Check-Diff 機制——每行指令對 Trisolaran 而言是不透明的，重跑是否安全由撰寫該行的人自己負責。`run: vscode_extensions`/`run: flatpaks` 靠底層指令自身的冪等性（`code --install-extension`、`flatpak remote-add --if-not-exists`/`flatpak install` 已安裝就跳過） |
+| **Command** | `sh -c <script>`（`script` step）；`run` step 沒有 shell 指令，直接呼叫對應的 Go 函式（`vscode_extensions` 是 `code --install-extension <id> --install-extension <id> ...`；`flatpaks` 是先 `flatpak remote-add --if-not-exists --user flathub <url>` 再 `flatpak install -y --user flathub <id> <id> ...`） |
+| **Validation** | 每個 step 必須恰好設定 `script` 或 `run` 其中一個；`run` 值必須是已知關鍵字（`dehydration`、`repos`、`vscode_extensions`、`flatpaks`） |
+| **Location** | `internal/ops/script.go`（`script` step 執行）、`internal/ops/vscode.go`（`vscode_extensions`）、`internal/ops/flatpak.go`（`flatpaks`）、`internal/cmd/rehydra.go`（pipeline 調度邏輯） |
 | **Status** | ✅ Implemented |
 
 ---
@@ -410,4 +410,6 @@ func EnsureScripts(scripts []string, username string) error
 | **IV** | artifact.Restore | ✅ Implemented | `internal/artifact/unpack.go` |
 | **IV** | artifact.ExtractBlueprint | ✅ Implemented | `internal/artifact/blueprint.go` |
 | **IV** | GitClone | ✅ Implemented | `internal/ops/user.go` |
+| **IV** | EnsureVSCodeExtensions | ✅ Implemented | `internal/ops/vscode.go` |
+| **IV** | EnsureFlatpaks | ✅ Implemented | `internal/ops/flatpak.go` |
 | **IV** | EnsureScripts / Pipeline | ✅ Implemented | `internal/ops/script.go`, `internal/cmd/rehydra.go` |

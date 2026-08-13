@@ -82,6 +82,19 @@ userspace:
       - "~/Documents/"
       - "~/Videos/"
 
+  # Extension IDs as printed by `code --list-extensions`. Not restored
+  # from dehydration.paths -- like other network-reinstallable tools,
+  # declared here and fetched fresh each time a `run: vscode_extensions`
+  # step runs.
+  vscode_extensions:
+    - eamodio.gitlens
+    - golang.go
+
+  # Flathub app IDs. The Flathub remote itself is added (user-scope, no
+  # root) as part of the same `run: flatpaks` step.
+  flatpaks:
+    - md.obsidian.Obsidian
+
   repos:
     - url: "git@github.com:user/project-alpha.git"
       dest: "~/Workspace/project-alpha"
@@ -111,3 +124,5 @@ userspace:
         sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
     - run: dehydration
     - run: repos
+    - run: vscode_extensions
+    - run: flatpaks

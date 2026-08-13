@@ -300,6 +300,14 @@ func runRehydra(cmd *cobra.Command, args []string) {
 			restoreDehydration()
 		case step.Run == config.RunRepos:
 			cloneRepos()
+		case step.Run == config.RunVSCodeExtensions:
+			if err := ops.EnsureVSCodeExtensions(sess.Blueprint.UserSpace.VSCodeExtensions, sess.Blueprint.Identity.Username); err != nil {
+				panic(err)
+			}
+		case step.Run == config.RunFlatpaks:
+			if err := ops.EnsureFlatpaks(sess.Blueprint.UserSpace.Flatpaks, sess.Blueprint.Identity.Username); err != nil {
+				panic(err)
+			}
 		}
 	}
 
