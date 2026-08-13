@@ -47,16 +47,37 @@ type SystemConfig struct {
 	Pkgs           []string        `yaml:"pkgs"`
 	PinnedPackages []string        `yaml:"pinned_packages"`
 	PkgRepos       []PkgRepoConfig `yaml:"pkg_repos"`
-	Services       []string        `yaml:"services"`
-	// Tmpfiles are paths (may use "~", expanded against the target user's
-	// home) removed on every boot via systemd-tmpfiles -- e.g. a stale app
-	// lock file left behind by an unclean shutdown. Declarative: no custom
-	// systemd unit needed, since systemd-tmpfiles-setup.service already
-	// ships enabled on any systemd system.
-	Tmpfiles []string      `yaml:"tmpfiles"`
-	Users    []UserConfig  `yaml:"users"`
-	Groups   []GroupConfig `yaml:"groups"`
+	// CoprRepos are "owner/project" COPR repos enabled via `dnf copr
+	// enable` before Pkgs installs. Separate from PkgRepos: a COPR repo
+	// is resolved by Copr's own API through the dnf copr plugin, not a
+	// static baseurl+gpgkey we can write ourselves.
+	CoprRepos []string `yaml:"copr_repos"`
+	Services  []string `yaml:"services"`
+	// Tmpfiles declares systemd-tmpfiles lines applied on every boot --
+	// e.g. removing a stale app lock file left behind by an unclean
+	// shutdown. Declarative: no custom systemd unit needed, since
+	// systemd-tmpfiles-setup.service already ships enabled on any systemd
+	// system.
+	Tmpfiles []TmpfileEntry `yaml:"tmpfiles"`
+	Users    []UserConfig   `yaml:"users"`
+	Groups   []GroupConfig  `yaml:"groups"`
 }
+
+// Known keys for TmpfileEntry -- the systemd-tmpfiles line type code.
+// Currently just TmpfileRemove; more of systemd-tmpfiles' own type codes
+// (e.g. "f" create-if-missing, "w" write-content) can be added here later
+// without changing TmpfileEntry's shape.
+const TmpfileRemove = "r"
+
+var knownTmpfileTypes = map[string]bool{
+	TmpfileRemove: true,
+}
+
+// TmpfileEntry is a single systemd-tmpfiles line, written as a one-key
+// map so the key can be any systemd-tmpfiles type code: {r: <path>} means
+// "remove <path> (may use ~, expanded against the target user's home) if
+// it exists". One entry, one key -- see validateBlueprint.
+type TmpfileEntry map[string]string
 
 // PkgRepoConfig declares the desired state of a single dnf repo, so
 // packages that live outside Fedora's default repos (e.g. VS Code, Chrome)
@@ -270,6 +291,19 @@ func validateBlueprint(bp *Blueprint) error {
 		}
 		if step.Run != "" && !knownRunValues[step.Run] {
 			return fmt.Errorf("userspace.pipeline[%d]: unknown run value %q", i, step.Run)
+		}
+	}
+
+	// Validate Tmpfiles: each entry must be exactly one key, and that key
+	// must be a known systemd-tmpfiles type code.
+	for i, entry := range bp.System.Tmpfiles {
+		if len(entry) != 1 {
+			return fmt.Errorf("system.tmpfiles[%d] must have exactly one key (a tmpfiles type code)", i)
+		}
+		for t := range entry {
+			if !knownTmpfileTypes[t] {
+				return fmt.Errorf("system.tmpfiles[%d]: unknown tmpfiles type %q", i, t)
+			}
 		}
 	}
 

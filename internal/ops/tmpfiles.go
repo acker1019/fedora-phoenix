@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/acker1019/fedora-trisolaran/internal/config"
 	"github.com/acker1019/fedora-trisolaran/internal/logging"
 	"github.com/acker1019/fedora-trisolaran/internal/utils"
 )
@@ -17,17 +18,20 @@ var tmpfilesLog = logging.WithSource("ops/tmpfiles")
 // this on startup.
 const tmpfilesConfPath = "/etc/tmpfiles.d/trisolaran.conf"
 
-// EnsureTmpfiles declares paths to be removed on every boot (e.g. a stale
-// app lock file). Idempotent: the desired file content is computed and
-// only written if it differs from what's already on disk.
-func EnsureTmpfiles(paths []string, userHome string) error {
-	if len(paths) == 0 {
+// EnsureTmpfiles declares systemd-tmpfiles lines applied on every boot
+// (e.g. removing a stale app lock file). Idempotent: the desired file
+// content is computed and only written if it differs from what's already
+// on disk.
+func EnsureTmpfiles(entries []config.TmpfileEntry, userHome string) error {
+	if len(entries) == 0 {
 		return nil
 	}
 
 	var desired strings.Builder
-	for _, p := range paths {
-		fmt.Fprintf(&desired, "r %s\n", utils.ExpandPath(p, userHome))
+	for _, entry := range entries {
+		for tmpfileType, path := range entry {
+			fmt.Fprintf(&desired, "%s %s\n", tmpfileType, utils.ExpandPath(path, userHome))
+		}
 	}
 
 	existing, err := os.ReadFile(tmpfilesConfPath)

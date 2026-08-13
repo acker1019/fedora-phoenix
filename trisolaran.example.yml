@@ -46,12 +46,14 @@ system:
   pinned_packages: []
   services: []
 
-  # Paths removed on every boot via systemd-tmpfiles (systemd's own
+  # Applied on every boot via systemd-tmpfiles (systemd's own
   # systemd-tmpfiles-setup.service, already enabled by default -- no
-  # custom unit needed). Useful for a stale app lock file left behind by
-  # an unclean shutdown.
+  # custom unit needed). Each entry is a one-key map: the key is a
+  # systemd-tmpfiles type code (currently only "r", remove-if-exists, is
+  # supported). Useful for a stale app lock file left behind by an
+  # unclean shutdown.
   tmpfiles:
-    - "~/.config/google-chrome/SingletonLock"
+    - r: "~/.config/google-chrome/SingletonLock"
 
   # Users and groups (name only, no ID)
   users:

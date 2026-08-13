@@ -145,6 +145,54 @@ func EnsurePkgRepos(repos []config.PkgRepoConfig) error
 
 ---
 
+### 4c. EnsureCoprRepos
+
+```go
+func EnsureCoprRepos(repos []string) error
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | 啟用 `system.copr_repos` 宣告的 COPR repo（`"owner/project"` 字串），在 `EnsurePackages` 之前執行 |
+| **Idempotency** | 無獨立 check 步驟——`dnf copr enable` 本身冪等，已啟用會直接回報、不報錯 |
+| **Command** | `dnf copr enable -y <owner/project>` |
+| **Note** | 跟 `EnsurePkgRepos` 分開的原因：COPR repo 是透過 Copr 自己的 API 由 `dnf copr` plugin 解析出實際 repo 位置，不是我們自己寫死的 baseurl+gpgkey |
+| **Location** | `internal/ops/copr.go` |
+| **Status** | ✅ Implemented |
+
+---
+
+### 4d. EnsureTimeSync
+
+```go
+func EnsureTimeSync() bool
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | Block III 最先執行：啟用 NTP 並在時限內輪詢確認同步成功。結果存進 `sess.TimeSynced`，Block IV 的 `artifact.Restore` 用它決定要不要信任檔案時間比較 |
+| **Command** | `timedatectl set-ntp true`，接著輪詢 `timedatectl show -p NTPSynchronized --value` 最多 10 秒 |
+| **Note** | 從不失敗中止——逾時或指令失敗都只回傳 `false`，由呼叫端（`rehydra.go`）決定如何處理（記進最終報告） |
+| **Location** | `internal/ops/time.go` |
+| **Status** | ✅ Implemented |
+
+---
+
+### 4e. CheckIOMMUNotDisabled
+
+```go
+func CheckIOMMUNotDisabled() string
+```
+
+| 屬性 | 說明 |
+|------|------|
+| **Responsibility** | 檢查目前執行中核心的開機參數（`/proc/cmdline`）有沒有 `amd_iommu=off`——部分 GPU 效能調校指南會建議加這個參數，但它會導致核心完全無法枚舉 NPU 裝置 |
+| **Note** | **只檢查、不修正**——回傳非空字串代表偵測到衝突，由呼叫端記進最終報告提醒使用者自己去改開機參數並重開機；這個工具不會自動改 bootloader 設定 |
+| **Location** | `internal/ops/iommu.go` |
+| **Status** | ✅ Implemented |
+
+---
+
 ### 5. EnsurePackages
 
 ```go
@@ -201,14 +249,16 @@ func EnsureServices(services []string)
 ### 7a. EnsureTmpfiles
 
 ```go
-func EnsureTmpfiles(paths []string, userHome string) error
+func EnsureTmpfiles(entries []config.TmpfileEntry, userHome string) error
 ```
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 宣告 `system.tmpfiles` 裡的路徑，透過 systemd-tmpfiles 在每次開機時移除（例如上次非正常關機留下的 app lock 檔） |
+| **Responsibility** | 宣告 `system.tmpfiles` 裡的 systemd-tmpfiles 規則，在每次開機時套用（例如移除上次非正常關機留下的 app lock 檔） |
+| **Schema** | 每個項目是單一 key 的 map（`config.TmpfileEntry = map[string]string`），key 是 systemd-tmpfiles 的 type code、value 是路徑，例如 `{r: "~/.config/google-chrome/SingletonLock"}`。目前只支援 `r`（不存在就跳過、存在就移除），之後要加其他 type code（`f`、`w`、`d` 等）不需要改 struct 形狀 |
 | **Idempotency** | 比對 `/etc/tmpfiles.d/trisolaran.conf` 現有內容跟期望內容是否相同，不同才寫入 |
-| **Command** | 寫入 `/etc/tmpfiles.d/trisolaran.conf`，每行 `r <展開後路徑>`；不需要自訂 systemd unit，因為 `systemd-tmpfiles-setup.service` 本來就內建、每次開機都會執行 |
+| **Command** | 寫入 `/etc/tmpfiles.d/trisolaran.conf`，每行 `<type> <展開後路徑>`；不需要自訂 systemd unit，因為 `systemd-tmpfiles-setup.service` 本來就內建、每次開機都會執行 |
+| **Validation** | 每個項目必須恰好一個 key，且該 key 必須是已知的 type code |
 | **Location** | `internal/ops/tmpfiles.go` |
 | **Status** | ✅ Implemented |
 
@@ -398,6 +448,9 @@ func EnsureScripts(scripts []string, username string) error
 | **II** | MountDevice | ✅ Implemented | `internal/ops/luks.go` |
 | **III** | EnsureSystemUpdate | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePkgRepos | ✅ Implemented | `internal/ops/pkg.go` |
+| **III** | EnsureCoprRepos | ✅ Implemented | `internal/ops/copr.go` |
+| **III** | EnsureTimeSync | ✅ Implemented | `internal/ops/time.go` |
+| **III** | CheckIOMMUNotDisabled | ✅ Implemented | `internal/ops/iommu.go` |
 | **III** | EnsurePackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsurePinnedPackages | ✅ Implemented | `internal/ops/pkg.go` |
 | **III** | EnsureServices | ✅ Implemented | `internal/ops/systemd.go` |

@@ -179,6 +179,12 @@ func runRehydra(cmd *cobra.Command, args []string) {
 		runNotices = append(runNotices, "time sync did not complete -- Block IV kept on-disk files instead of comparing timestamps against the artifact")
 	}
 
+	// Check-only, never auto-fixed: a wrong boot parameter here needs a
+	// bootloader edit + reboot, which this tool won't do unattended.
+	if msg := ops.CheckIOMMUNotDisabled(); msg != "" {
+		runNotices = append(runNotices, msg)
+	}
+
 	// Update all installed packages first, before anything else in this
 	// block touches package state. Opt-out via system.skip_update; on by
 	// default.
@@ -205,6 +211,13 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	// Ensure Pkg Repos (before Pkgs, since packages may come from them)
 	if len(sess.Blueprint.System.PkgRepos) > 0 {
 		if err := ops.EnsurePkgRepos(sess.Blueprint.System.PkgRepos); err != nil {
+			panic(err)
+		}
+	}
+
+	// Ensure COPR Repos (before Pkgs, since packages may come from them)
+	if len(sess.Blueprint.System.CoprRepos) > 0 {
+		if err := ops.EnsureCoprRepos(sess.Blueprint.System.CoprRepos); err != nil {
 			panic(err)
 		}
 	}
