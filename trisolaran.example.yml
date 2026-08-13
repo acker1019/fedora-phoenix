@@ -41,6 +41,7 @@ system:
     - fprintd
     - google-chrome-stable
     - code
+    - gnome-shell-extension-caffeine
 
   pinned_packages: []
   services: []
@@ -84,6 +85,12 @@ userspace:
   repos:
     - url: "git@github.com:user/project-alpha.git"
       dest: "~/Workspace/project-alpha"
+    # oh-my-zsh's installer (below) doesn't install third-party themes --
+    # this clone must land after oh-my-zsh's directory exists, which the
+    # pipeline below already guarantees (`run: repos` comes after the
+    # oh-my-zsh install script).
+    - url: "https://github.com/romkatv/powerlevel10k.git"
+      dest: "~/.oh-my-zsh/custom/themes/powerlevel10k"
 
   # Ordered Block IV steps, run as the target user (not root). By default
   # (no step below has `run: dehydration` or `run: repos`), the
