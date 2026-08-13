@@ -85,8 +85,20 @@ userspace:
     - url: "git@github.com:user/project-alpha.git"
       dest: "~/Workspace/project-alpha"
 
-  # One-liner shell commands, run as the target user (not root), last in
-  # Block IV (after the artifact is restored and repos are cloned), for
-  # anything that can't just be a dnf package.
-  scripts:
-    - 'sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+  # Ordered Block IV steps, run as the target user (not root). By default
+  # (no step below has `run: dehydration` or `run: repos`), the
+  # dehydration restore and repo clones above happen automatically before
+  # any `script` steps run. Placing `run: dehydration`/`run: repos`
+  # explicitly (like below) opts out of that default so you can place
+  # custom commands around them -- here, oh-my-zsh's installer
+  # unconditionally overwrites .zshrc, so it has to run *before* the
+  # dehydration restore, or it'd clobber the .zshrc that restore just
+  # wrote back.
+  #
+  # Trisolaran can't check-diff arbitrary shell, so making a `script` line
+  # safe to rerun (like the guard below) is on you -- one that errors out
+  # on a second run will abort the whole rehydra.
+  pipeline:
+    - script: '[ -d "$HOME/.oh-my-zsh" ] || sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+    - run: dehydration
+    - run: repos

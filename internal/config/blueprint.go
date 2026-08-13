@@ -99,14 +99,41 @@ type UserSpaceConfig struct {
 	Dehydration DehydrationConfig `yaml:"dehydration"`
 	Repos       []RepoConfig      `yaml:"repos"`
 
-	// Scripts are one-liner shell commands run, in order, as the target
-	// user (via RunCommandAsUser), as the very last step of Block IV —
-	// after the artifact is restored and repos are cloned, since a script
-	// may depend on either (e.g. a third-party installer for something
-	// that isn't a dnf package, run in the user's own $HOME). Each entry
-	// is opaque to Trisolaran: making a given line safe to rerun is the
-	// script author's responsibility, not the engine's.
-	Scripts []string `yaml:"scripts"`
+	// Pipeline is the ordered sequence of Block IV steps, run as the
+	// target user. By default (no step in Pipeline has a Run of
+	// RunDehydration or RunRepos), restoring the artifact and cloning
+	// Repos both happen automatically before Pipeline runs, and every
+	// Script step then runs in order -- the original fixed "restore,
+	// clone, then scripts last" behavior. Explicitly placing a
+	// RunDehydration or RunRepos step in Pipeline opts out of that
+	// default and lets you interleave custom commands around them (e.g. a
+	// dotfile-clobbering installer that must run *before* the artifact
+	// restore, so the restore has the last word instead of the
+	// installer).
+	//
+	// A step's Run keyword is deliberately the same word as the section
+	// it triggers (RunDehydration -> the Dehydration section above,
+	// RunRepos -> the Repos section above) rather than a separate
+	// "restore_x" verb, so there's only one name per concept to remember.
+	//
+	// Script entries are opaque to Trisolaran: making a given line safe
+	// to rerun is the script author's responsibility, not the engine's.
+	Pipeline []PipelineStep `yaml:"pipeline"`
+}
+
+// Known values for PipelineStep.Run.
+const (
+	RunDehydration = "dehydration"
+	RunRepos       = "repos"
+)
+
+// PipelineStep is exactly one of: a custom one-liner (Script), or a named
+// built-in action (Run -- one of RunDehydration, RunRepos). Run is a
+// keyword, not a bool, so future built-in actions can be added as new
+// valid values without growing the struct every time.
+type PipelineStep struct {
+	Script string `yaml:"script,omitempty"`
+	Run    string `yaml:"run,omitempty"`
 }
 
 // DehydrationConfig defines which paths are collected into an artifact.
@@ -199,6 +226,25 @@ func validateBlueprint(bp *Blueprint) error {
 	// Validate Identity
 	if bp.Identity.Username == "" {
 		return fmt.Errorf("identity.username is required")
+	}
+
+	// Validate Pipeline: each step must set exactly one of Script/Run, and
+	// a Run value must be a known keyword, so there's no ambiguity about
+	// what a step does (or silent no-ops from an empty/misspelled step).
+	for i, step := range bp.UserSpace.Pipeline {
+		set := 0
+		if step.Script != "" {
+			set++
+		}
+		if step.Run != "" {
+			set++
+		}
+		if set != 1 {
+			return fmt.Errorf("userspace.pipeline[%d] must set exactly one of script or run", i)
+		}
+		if step.Run != "" && step.Run != RunDehydration && step.Run != RunRepos {
+			return fmt.Errorf("userspace.pipeline[%d]: unknown run value %q (expected %q or %q)", i, step.Run, RunDehydration, RunRepos)
+		}
 	}
 
 	return nil

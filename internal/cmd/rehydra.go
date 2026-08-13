@@ -238,28 +238,55 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	// ============================================================================
 	fmt.Println("👤 Step 4/5: Restoring user space...")
 
-	// Restore Artifact (ADR-0008)
-	if sess.ArtifactPath != "" {
-		if err := artifact.Restore(sess.ArtifactPath); err != nil {
-			panic(err)
-		}
-	} else {
-		fmt.Printf("⚠️  No artifact given and %q not found, skipping user space restore (dotfiles/SSH keys/etc. will NOT be restored)\n", defaultArtifactPath)
-	}
-
-	// Clone Git Repositories
-	for _, repo := range sess.Blueprint.UserSpace.Repos {
-		expandedDest := utils.ExpandPath(repo.Dest, sess.UserHome)
-		if err := ops.GitClone(repo.URL, expandedDest, sess.Blueprint.Identity.Username); err != nil {
-			panic(err)
+	restoreDehydration := func() {
+		if sess.ArtifactPath != "" {
+			if err := artifact.Restore(sess.ArtifactPath); err != nil {
+				panic(err)
+			}
+		} else {
+			fmt.Printf("⚠️  No artifact given and %q not found, skipping user space restore (dotfiles/SSH keys/etc. will NOT be restored)\n", defaultArtifactPath)
 		}
 	}
 
-	// Run custom scripts. Must stay last in Block IV: a script may depend
-	// on the artifact restore or repos cloned earlier in this same block.
-	if len(sess.Blueprint.UserSpace.Scripts) > 0 {
-		if err := ops.EnsureScripts(sess.Blueprint.UserSpace.Scripts, sess.Blueprint.Identity.Username); err != nil {
-			panic(err)
+	cloneRepos := func() {
+		for _, repo := range sess.Blueprint.UserSpace.Repos {
+			expandedDest := utils.ExpandPath(repo.Dest, sess.UserHome)
+			if err := ops.GitClone(repo.URL, expandedDest, sess.Blueprint.Identity.Username); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// By default (no pipeline step explicitly places them), restore and
+	// clone happen first, before any pipeline scripts -- see
+	// config.UserSpaceConfig.Pipeline.
+	hasExplicitDehydration := false
+	hasExplicitRepos := false
+	for _, step := range sess.Blueprint.UserSpace.Pipeline {
+		if step.Run == config.RunDehydration {
+			hasExplicitDehydration = true
+		}
+		if step.Run == config.RunRepos {
+			hasExplicitRepos = true
+		}
+	}
+	if !hasExplicitDehydration {
+		restoreDehydration()
+	}
+	if !hasExplicitRepos {
+		cloneRepos()
+	}
+
+	for _, step := range sess.Blueprint.UserSpace.Pipeline {
+		switch {
+		case step.Script != "":
+			if err := ops.EnsureScripts([]string{step.Script}, sess.Blueprint.Identity.Username); err != nil {
+				panic(err)
+			}
+		case step.Run == config.RunDehydration:
+			restoreDehydration()
+		case step.Run == config.RunRepos:
+			cloneRepos()
 		}
 	}
 

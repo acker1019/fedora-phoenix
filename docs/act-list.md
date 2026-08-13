@@ -369,7 +369,7 @@ func GitClone(url, dest, username string)
 
 ---
 
-### 14. EnsureScripts
+### 14. EnsureScripts / Pipeline
 
 ```go
 func EnsureScripts(scripts []string, username string) error
@@ -377,12 +377,13 @@ func EnsureScripts(scripts []string, username string) error
 
 | 屬性 | 說明 |
 |------|------|
-| **Responsibility** | 依序執行 `userspace.scripts` 定義的單行 shell 指令，用於處理無法透過 dnf 安裝的東西（例如需要跑第三方 installer script 的工具） |
-| **Execution** | Via `RunCommandAsUser`，在目標使用者自己的 `$HOME` 下執行，不是 root |
-| **Ordering** | **必須是 Block IV 的最後一步**（在 `rehydra.go` 裡緊接在 `GitClone` 迴圈之後），因為腳本內容可能會依賴 artifact 還原或 repo clone 的結果 |
-| **Idempotency** | 沒有通用的 Check-Diff 機制——每行指令對 Trisolaran 而言是不透明的，重跑是否安全由撰寫該行的人自己負責 |
-| **Command** | `sh -c <script>` |
-| **Location** | `internal/ops/script.go` |
+| **Responsibility** | Block IV 依序執行 `userspace.pipeline` 定義的 step。每個 step 是 `script`（單行 shell，透過 `EnsureScripts` 執行）或 `run`（`dehydration`/`repos`，觸發 artifact 還原 / repo clone） |
+| **Execution** | `script` step via `RunCommandAsUser`，在目標使用者自己的 `$HOME` 下執行，不是 root |
+| **Ordering** | **預設**：沒有任何 step 明確寫 `run: dehydration`/`run: repos` 時，artifact 還原跟 repo clone 會自動排在所有 `script` 之前執行（維持原本「還原、clone、腳本最後」的行為）。**明確控制**：只要 pipeline 裡有任何一個 step 寫了 `run: dehydration`/`run: repos`，該動作就改成照你排的順序執行，讓你可以把 script 插在還原/clone 前後（例如 oh-my-zsh 安裝程式會無條件覆蓋 `.zshrc`，必須排在 `run: dehydration` **之前**，不然會蓋掉剛還原回去的 `.zshrc`） |
+| **Idempotency** | `script` 沒有通用的 Check-Diff 機制——每行指令對 Trisolaran 而言是不透明的，重跑是否安全由撰寫該行的人自己負責 |
+| **Command** | `sh -c <script>`（`script` step）；`run` step 沒有 shell 指令，直接呼叫對應的 Go 函式 |
+| **Validation** | 每個 step 必須恰好設定 `script` 或 `run` 其中一個；`run` 值必須是已知關鍵字（目前是 `dehydration`、`repos`） |
+| **Location** | `internal/ops/script.go`（`script` step 執行）、`internal/cmd/rehydra.go`（pipeline 調度邏輯） |
 | **Status** | ✅ Implemented |
 
 ---
@@ -409,4 +410,4 @@ func EnsureScripts(scripts []string, username string) error
 | **IV** | artifact.Restore | ✅ Implemented | `internal/artifact/unpack.go` |
 | **IV** | artifact.ExtractBlueprint | ✅ Implemented | `internal/artifact/blueprint.go` |
 | **IV** | GitClone | ✅ Implemented | `internal/ops/user.go` |
-| **IV** | EnsureScripts | ✅ Implemented | `internal/ops/script.go` |
+| **IV** | EnsureScripts / Pipeline | ✅ Implemented | `internal/ops/script.go`, `internal/cmd/rehydra.go` |
