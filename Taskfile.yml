@@ -8,7 +8,12 @@ tasks:
   build:
     desc: Cross-compile the tri binary for Linux amd64
     cmds:
-      - go build -o bin/tri ./cmd/trisolaran
+      - go build -ldflags="-s -w" -o bin/tri ./cmd/trisolaran
+
+  build-debug:
+    desc: Cross-compile the tri binary with optimizations/inlining disabled, for debugging
+    cmds:
+      - go build -gcflags="all=-N -l" -o bin/tri ./cmd/trisolaran
 
   vet:
     desc: Run go vet
