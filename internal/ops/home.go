@@ -22,7 +22,7 @@ func EnsureUserHome(username string, uid, gid int) (string, error) {
 		if os.IsNotExist(err) {
 			// Act: Create home directory
 			homeLog.Infof("Creating home directory: %s", homeDir)
-			if err := os.MkdirAll(homeDir, 0755); err != nil {
+			if err := os.MkdirAll(homeDir, 0700); err != nil {
 				return "", fmt.Errorf("failed to create home directory: %w", err)
 			}
 
@@ -42,12 +42,15 @@ func EnsureUserHome(username string, uid, gid int) (string, error) {
 		return "", fmt.Errorf("%s exists but is not a directory", homeDir)
 	}
 
-	// Diff: Check permissions (should be at least 0755)
+	// Diff: Check permissions (should be exactly 0700, so other users can't
+	// read into it; unlike the old 0755 baseline, this can't be a "has at
+	// least" bitmask check, since a looser mode like 0755 would already
+	// satisfy that and never get tightened back down)
 	mode := info.Mode().Perm()
-	if mode&0755 != 0755 {
+	if mode != 0700 {
 		// Act: Fix permissions
-		homeLog.Warnf("Home directory has incorrect permissions: %o, fixing to 0755", mode)
-		if err := os.Chmod(homeDir, 0755); err != nil {
+		homeLog.Warnf("Home directory has incorrect permissions: %o, fixing to 0700", mode)
+		if err := os.Chmod(homeDir, 0700); err != nil {
 			return "", fmt.Errorf("failed to fix permissions: %w", err)
 		}
 	}
