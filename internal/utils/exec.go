@@ -50,19 +50,34 @@ func RunCommandAsUser(username, name string, args ...string) error {
 		},
 	}
 
-	// Set HOME environment variable for the user. os.Environ() already
-	// contains root's own HOME (since this process runs as root); simply
-	// appending a new HOME entry wouldn't override it; because getenv()
-	// on Linux/glibc scans front-to-back and returns the FIRST match,
-	// so the target user's key/config lookups (e.g. via git/ssh) would
-	// silently keep using root's $HOME. Filter out the old entry first.
-	env := make([]string, 0, len(os.Environ())+1)
+	// Set HOME/XDG_RUNTIME_DIR/DBUS_SESSION_BUS_ADDRESS for the target
+	// user. os.Environ() already contains root's own copies of these
+	// (since this process runs as root); simply appending new entries
+	// wouldn't override them, because getenv() on Linux/glibc scans
+	// front-to-back and returns the FIRST match. Filter out the old
+	// entries first.
+	//
+	// XDG_RUNTIME_DIR/DBUS_SESSION_BUS_ADDRESS matter for anything that
+	// talks to the target user's own systemd user session or session
+	// bus (`systemctl --user`, and tools like lemonade that go through
+	// it) -- without them pointing at /run/user/<uid>, those commands
+	// can't find that user's session and fail outright.
+	runtimeDir := fmt.Sprintf("/run/user/%d", uid)
+	env := make([]string, 0, len(os.Environ())+3)
 	for _, e := range os.Environ() {
-		if !strings.HasPrefix(e, "HOME=") {
-			env = append(env, e)
+		switch {
+		case strings.HasPrefix(e, "HOME="),
+			strings.HasPrefix(e, "XDG_RUNTIME_DIR="),
+			strings.HasPrefix(e, "DBUS_SESSION_BUS_ADDRESS="):
+			continue
 		}
+		env = append(env, e)
 	}
-	cmd.Env = append(env, fmt.Sprintf("HOME=%s", u.HomeDir))
+	cmd.Env = append(env,
+		fmt.Sprintf("HOME=%s", u.HomeDir),
+		fmt.Sprintf("XDG_RUNTIME_DIR=%s", runtimeDir),
+		fmt.Sprintf("DBUS_SESSION_BUS_ADDRESS=unix:path=%s/bus", runtimeDir),
+	)
 
 	// Connect stdout/stderr for visibility
 	cmd.Stdout = os.Stdout
