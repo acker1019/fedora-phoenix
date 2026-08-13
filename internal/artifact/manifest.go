@@ -24,6 +24,11 @@ type FileMeta struct {
 	Group  string `yaml:"group"`
 	SHA256 string `yaml:"sha256,omitempty"`
 	Type   string `yaml:"type,omitempty"` // "directory", or empty for a regular file
+
+	// ModTime is the source file's modification time (RFC3339), recorded
+	// so Restore can compare it against a same-path file already on disk
+	// and keep whichever is newer, instead of always overwriting.
+	ModTime string `yaml:"mod_time,omitempty"`
 }
 
 // Manifest is the root structure of filemeta.yml.

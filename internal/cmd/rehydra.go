@@ -168,6 +168,17 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	// ============================================================================
 	fmt.Println("📦 Step 3/5: Configuring system state...")
 
+	var runNotices []string
+
+	// Sync the clock first, before anything else touches package state or
+	// user-space content -- dnf/HTTPS validation depends on a correct
+	// clock, and so does Block IV's restore-vs-disk timestamp comparison
+	// below (sess.TimeSynced gates whether that comparison is trusted).
+	sess.TimeSynced = ops.EnsureTimeSync()
+	if !sess.TimeSynced {
+		runNotices = append(runNotices, "time sync did not complete -- Block IV kept on-disk files instead of comparing timestamps against the artifact")
+	}
+
 	// Update all installed packages first, before anything else in this
 	// block touches package state. Opt-out via system.skip_update; on by
 	// default.
@@ -240,9 +251,11 @@ func runRehydra(cmd *cobra.Command, args []string) {
 
 	restoreDehydration := func() {
 		if sess.ArtifactPath != "" {
-			if err := artifact.Restore(sess.ArtifactPath); err != nil {
+			notices, err := artifact.Restore(sess.ArtifactPath, sess.TimeSynced)
+			if err != nil {
 				panic(err)
 			}
+			runNotices = append(runNotices, notices...)
 		} else {
 			fmt.Printf("⚠️  No artifact given and %q not found, skipping user space restore (dotfiles/SSH keys/etc. will NOT be restored)\n", defaultArtifactPath)
 		}
@@ -291,4 +304,12 @@ func runRehydra(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("✨ Rehydration Complete. Welcome back, Commander.")
+
+	if len(runNotices) > 0 {
+		reportPath := "rehydra-notices.txt"
+		if err := utils.WriteNoticesReport(runNotices, reportPath); err != nil {
+			panic(fmt.Sprintf("Failed to write notices report: %v", err))
+		}
+		fmt.Printf("\n⚠️  %d note(s) worth a second look -- see %s\n", len(runNotices), reportPath)
+	}
 }

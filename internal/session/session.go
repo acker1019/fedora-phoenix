@@ -25,6 +25,14 @@ type Session struct {
 	LuksUnlocked   bool   // Whether LUKS device is currently unlocked
 	LuksMounted    bool   // Whether LUKS device is currently mounted
 
+	// System State (from Block III)
+	// TimeSynced reports whether EnsureTimeSync confirmed NTP sync. Block
+	// IV's artifact restore only trusts a file-timestamp comparison
+	// (newer wins) when this is true; otherwise it keeps whatever's
+	// already on disk rather than compare against a clock that might be
+	// wrong.
+	TimeSynced bool
+
 	// Temporary Variables
 	ArtifactPath string // Path to artifact tgz (explicit positional arg, or auto-detected default)
 }

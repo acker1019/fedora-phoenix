@@ -50,9 +50,18 @@ func runDehydra() {
 	}
 
 	fmt.Printf("🍂 Dehydrating %d paths...\n", len(paths))
-	if err := artifact.Pack(paths, blueprintPath, dehydraOutput); err != nil {
+	notices, err := artifact.Pack(paths, blueprintPath, dehydraOutput)
+	if err != nil {
 		panic(fmt.Sprintf("Failed to pack artifact: %v", err))
 	}
 
 	fmt.Printf("✓ Artifact written to %s\n", dehydraOutput)
+
+	if len(notices) > 0 {
+		reportPath := dehydraOutput + ".notices.txt"
+		if err := utils.WriteNoticesReport(notices, reportPath); err != nil {
+			panic(fmt.Sprintf("Failed to write notices report: %v", err))
+		}
+		fmt.Printf("\n⚠️  %d path(s) worth a second look -- see %s\n", len(notices), reportPath)
+	}
 }

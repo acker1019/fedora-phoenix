@@ -27,16 +27,21 @@ var packLog = logging.WithSource("artifact/pack")
 // can read the blueprint straight out of the artifact.
 //
 // Paths must already be expanded to absolute form (no "~").
-func Pack(paths []string, blueprintPath, outputPath string) error {
+//
+// Returns a human-readable notice for every path worth flagging -- missing
+// entirely, missing partway up the tree, or present but empty -- so the
+// caller can report them clearly. None of these are fatal (see
+// collectPath); only a real read/copy failure aborts the pack.
+func Pack(paths []string, blueprintPath, outputPath string) ([]string, error) {
 	if len(paths) == 0 {
-		return fmt.Errorf("no paths to pack")
+		return nil, fmt.Errorf("no paths to pack")
 	}
 
 	packLog.Infof("Packing %d paths into %s", len(paths), outputPath)
 
 	stageDir, err := os.MkdirTemp("", "trisolaran-pack-*")
 	if err != nil {
-		return fmt.Errorf("failed to create staging directory: %w", err)
+		return nil, fmt.Errorf("failed to create staging directory: %w", err)
 	}
 	defer func() {
 		if rerr := os.RemoveAll(stageDir); rerr != nil {
@@ -48,7 +53,7 @@ func Pack(paths []string, blueprintPath, outputPath string) error {
 	root := filepath.Join(stageDir, protectName)
 	fsRoot := filepath.Join(root, "fs")
 	if err := os.MkdirAll(fsRoot, 0755); err != nil {
-		return fmt.Errorf("failed to create fs mirror root: %w", err)
+		return nil, fmt.Errorf("failed to create fs mirror root: %w", err)
 	}
 
 	manifest := &Manifest{
@@ -56,40 +61,105 @@ func Pack(paths []string, blueprintPath, outputPath string) error {
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
+	var notices []string
 	for _, p := range paths {
-		if err := collectPath(p, fsRoot, manifest); err != nil {
-			return fmt.Errorf("failed to collect %s: %w", p, err)
+		notice, err := collectPath(p, fsRoot, manifest)
+		if err != nil {
+			return notices, fmt.Errorf("failed to collect %s: %w", p, err)
+		}
+		if notice != "" {
+			notices = append(notices, notice)
 		}
 	}
 
 	if err := SaveManifest(filepath.Join(root, ManifestFileName), manifest); err != nil {
-		return err
+		return notices, err
 	}
 
 	if blueprintPath != "" {
 		data, err := os.ReadFile(blueprintPath)
 		if err != nil {
-			return fmt.Errorf("failed to read blueprint for embedding: %w", err)
+			return notices, fmt.Errorf("failed to read blueprint for embedding: %w", err)
 		}
 		if err := os.WriteFile(filepath.Join(root, BlueprintFileName), data, 0644); err != nil {
-			return fmt.Errorf("failed to embed blueprint: %w", err)
+			return notices, fmt.Errorf("failed to embed blueprint: %w", err)
 		}
 	}
 
 	if err := createTarGz(stageDir, protectName, outputPath); err != nil {
-		return fmt.Errorf("failed to create archive: %w", err)
+		return notices, fmt.Errorf("failed to create archive: %w", err)
 	}
 
 	packLog.Infof("Artifact created: %s (%d entries)", outputPath, len(manifest.Entries))
-	return nil
+	return notices, nil
+}
+
+// describeMissing explains why src doesn't exist: either its immediate
+// parent is present (src itself is simply missing), or the tree breaks
+// somewhere higher up, in which case it reports the deepest missing
+// ancestor -- e.g. "custom/" was never created, not just the file inside
+// it.
+func describeMissing(src string) string {
+	dir := filepath.Dir(src)
+	if _, err := os.Stat(dir); err == nil {
+		return fmt.Sprintf("target does not exist: %s", src)
+	}
+
+	broken := dir
+	for {
+		parent := filepath.Dir(broken)
+		if parent == broken {
+			break // reached filesystem root, still missing
+		}
+		if _, err := os.Stat(parent); err == nil {
+			break
+		}
+		broken = parent
+	}
+	return fmt.Sprintf("path broken at %s (does not exist): %s", broken, src)
+}
+
+// describeIfEmpty reports a present-but-empty file or directory, so it
+// doesn't silently produce an artifact entry with nothing in it.
+func describeIfEmpty(src string, info os.FileInfo) string {
+	if info.IsDir() {
+		entries, err := os.ReadDir(src)
+		if err == nil && len(entries) == 0 {
+			return fmt.Sprintf("empty directory: %s", src)
+		}
+		return ""
+	}
+	if info.Mode().IsRegular() && info.Size() == 0 {
+		return fmt.Sprintf("empty file (0 bytes): %s", src)
+	}
+	return ""
 }
 
 // collectPath walks a single source path (file or directory) and mirrors
-// it under fsRoot, appending metadata entries to the manifest.
-func collectPath(src, fsRoot string, manifest *Manifest) error {
+// it under fsRoot, appending metadata entries to the manifest. Nothing
+// here is fatal to the overall pack: a missing path (whether just the
+// leaf or broken higher up the tree) is skipped, and a present-but-empty
+// file/directory is still collected -- both are only reported back via
+// the notice return value so the caller can warn about them.
+func collectPath(src, fsRoot string, manifest *Manifest) (notice string, err error) {
 	src = filepath.Clean(src)
 
-	return filepath.Walk(src, func(walkedPath string, info os.FileInfo, err error) error {
+	info, statErr := os.Stat(src)
+	if os.IsNotExist(statErr) {
+		msg := describeMissing(src)
+		packLog.Warn(msg)
+		return msg, nil
+	}
+	if statErr != nil {
+		return "", statErr
+	}
+
+	if msg := describeIfEmpty(src, info); msg != "" {
+		packLog.Warn(msg)
+		notice = msg
+	}
+
+	err = filepath.Walk(src, func(walkedPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -131,15 +201,17 @@ func collectPath(src, fsRoot string, manifest *Manifest) error {
 		}
 
 		manifest.Entries = append(manifest.Entries, FileMeta{
-			Path:   walkedPath,
-			Mode:   mode,
-			Owner:  owner,
-			Group:  group,
-			SHA256: sum,
+			Path:    walkedPath,
+			Mode:    mode,
+			Owner:   owner,
+			Group:   group,
+			SHA256:  sum,
+			ModTime: info.ModTime().UTC().Format(time.RFC3339),
 		})
 
 		return nil
 	})
+	return notice, err
 }
 
 // lookupOwnerGroup resolves the owner/group *names* for a file, per
