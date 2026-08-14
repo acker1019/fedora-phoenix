@@ -1,0 +1,16 @@
+libdrm
+libdrm-devel
+openssl
+openssl-devel
+rapidjson-devel
+libuuid-devel
+libstdc++-static
+glibc-static
+rpm-build
+kernel-headers
+kernel-devel-$(uname -r)
+dkms
+curl-devel
+readline-devel
+
+LEMONADE_FLM_LINUX_BETA=1
