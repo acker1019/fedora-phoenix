@@ -204,6 +204,7 @@ func EnsurePackages(pkgs []string) error
 | **Responsibility** | 安裝一般套件 (Always Latest) |
 | **Idempotency** | Filter installed packages using `rpm -q` for speed |
 | **Command** | `dnf install -y <pkg>` for missing ones |
+| **Note** | 套件名稱裡的字面 token `$(uname -r)`（例如 `kernel-devel-$(uname -r)`，DKMS/核心模組編譯常見需求）會在檢查/安裝前被替換成目前執行中核心的版本字串——用 `syscall.Uname` 讀取，不透過 shell（`pkgs` 是直接傳給 `exec.Command` 的純字串陣列，沒有 shell 可以展開 `$(...)`） |
 | **Location** | `internal/ops/pkg.go` |
 | **Status** | ✅ Implemented |
 

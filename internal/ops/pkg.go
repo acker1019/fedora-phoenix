@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/acker1019/fedora-trisolaran/internal/config"
 	"github.com/acker1019/fedora-trisolaran/internal/logging"
@@ -30,12 +31,58 @@ func EnsureSystemUpdate() error {
 	return nil
 }
 
+// kernelReleaseToken is expanded, in EnsurePackages, to the running
+// kernel's uname -r release string -- e.g. "kernel-devel-$(uname -r)" for
+// a kernel-devel matching the running kernel exactly, as DKMS/module
+// builds need. pkgs is a plain string list passed straight to
+// exec.Command (no shell involved), so "$(...)" is never shell-expanded;
+// this recognizes just that one literal token and substitutes a
+// Go-native value instead of shelling out.
+const kernelReleaseToken = "$(uname -r)"
+
+// expandKernelRelease replaces kernelReleaseToken in pkg with the running
+// kernel's release (via syscall.Uname, no shell). Left as-is (and let dnf
+// fail loudly on it) if the release can't be read.
+func expandKernelRelease(pkg string) string {
+	if !strings.Contains(pkg, kernelReleaseToken) {
+		return pkg
+	}
+
+	var uts syscall.Utsname
+	if err := syscall.Uname(&uts); err != nil {
+		pkgLog.Warnf("Failed to read running kernel release: %v", err)
+		return pkg
+	}
+
+	release := utsFieldToString(uts.Release[:])
+	return strings.ReplaceAll(pkg, kernelReleaseToken, release)
+}
+
+// utsFieldToString converts a syscall.Utsname byte field (a fixed-size,
+// NUL-terminated int8 array) to a Go string.
+func utsFieldToString(field []int8) string {
+	b := make([]byte, 0, len(field))
+	for _, c := range field {
+		if c == 0 {
+			break
+		}
+		b = append(b, byte(c))
+	}
+	return string(b)
+}
+
 // EnsurePackages is the idempotent function to install packages.
 // It filters out already installed packages using rpm -q for speed.
 func EnsurePackages(pkgs []string) error {
 	if len(pkgs) == 0 {
 		return nil
 	}
+
+	expanded := make([]string, len(pkgs))
+	for i, pkg := range pkgs {
+		expanded[i] = expandKernelRelease(pkg)
+	}
+	pkgs = expanded
 
 	pkgLog.Infof("Checking status for %d packages...", len(pkgs))
 
