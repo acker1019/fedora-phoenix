@@ -1,0 +1,3 @@
+[submodule "my-trisolaran-config"]
+	path = my-trisolaran-config
+	url = git@github.com:acker1019/my-trisolaran-config.git
